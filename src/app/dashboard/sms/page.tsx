@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Send, MessageSquare, CheckCircle, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 
 interface SmsLog {
@@ -28,7 +29,6 @@ export default function SmsPage() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [sendSuccess, setSendSuccess] = useState("");
 
   const [logs, setLogs] = useState<SmsLog[]>([]);
   const [meta, setMeta] = useState<Meta>({ total: 0, page: 1, limit: LIMIT, totalPages: 1 });
@@ -51,13 +51,12 @@ export default function SmsPage() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSending(true); setSendError(""); setSendSuccess("");
+    setSending(true); setSendError("");
     try {
       await api.post("/sms/send", { to, message });
-      setSendSuccess("SMS সফলভাবে পাঠানো হয়েছে!");
+      toast.success("SMS সফলভাবে পাঠানো হয়েছে!");
       setTo(""); setMessage("");
       fetchLogs(1);
-      setTimeout(() => setSendSuccess(""), 4000);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "SMS পাঠাতে ব্যর্থ হয়েছে");
     } finally {
@@ -105,7 +104,6 @@ export default function SmsPage() {
             />
           </div>
           {sendError && <p className="text-sm text-red-500">{sendError}</p>}
-          {sendSuccess && <p className="text-sm text-green-600 font-medium">✓ {sendSuccess}</p>}
           <div className="flex justify-end">
             <button
               type="submit"

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
 interface TeamMember {
@@ -40,6 +42,7 @@ export default function TeamPage() {
   const [form, setForm] = useState<FormData>(empty);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<{ data: TeamMember[] }>("/team/all")
@@ -76,9 +79,11 @@ export default function TeamPage() {
       if (editing) {
         const res = await api.patch<{ data: TeamMember }>(`/team/${editing.id}`, body);
         setData((prev) => prev.map((m) => m.id === editing.id ? res.data : m));
+        toast.success("সদস্যের তথ্য সফলভাবে আপডেট হয়েছে!");
       } else {
         const res = await api.post<{ data: TeamMember }>("/team", body);
         setData((prev) => [...prev, res.data]);
+        toast.success("নতুন সদস্য সফলভাবে যোগ হয়েছে!");
       }
       setModalOpen(false);
     } catch (err: unknown) {
@@ -86,10 +91,14 @@ export default function TeamPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("এই সদস্যকে মুছতে নিশ্চিত?")) return;
-    await api.delete(`/team/${id}`).catch(() => {});
-    setData((prev) => prev.filter((m) => m.id !== id));
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await api.delete(`/team/${deleteId}`).catch(() => {});
+    setData((prev) => prev.filter((m) => m.id !== deleteId));
+    setDeleteId(null);
+    toast.success("সদস্য সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
   return (
@@ -143,6 +152,13 @@ export default function TeamPage() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteId}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        message="এই সদস্যকে স্থায়ীভাবে মুছে ফেলা হবে। আপনি কি নিশ্চিত?"
+      />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "সদস্য সম্পাদনা" : "নতুন সদস্য যোগ করুন"} width="max-w-xl">
         <form onSubmit={handleSave} className="flex flex-col gap-4">

@@ -104,9 +104,7 @@ export default function AdminTable<T extends { id: string }>({
                     )}
                     {onDelete && (
                       <button
-                        onClick={() => {
-                          if (confirm("আপনি কি এটি মুছতে নিশ্চিত?")) onDelete(row.id);
-                        }}
+                        onClick={() => onDelete(row.id)}
                         className="p-1.5 rounded-md text-red-500 hover:bg-red-50 transition-colors"
                         title="মুছুন"
                       >

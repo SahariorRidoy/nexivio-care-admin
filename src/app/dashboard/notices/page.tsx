@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Plus, Search, Filter, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatDate, assetUrl } from "@/lib/utils";
 import AdminTable, { type Column } from "@/components/ui/AdminTable";
+import toast from "react-hot-toast";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Notice {
   id: string;
@@ -37,6 +39,64 @@ const empty: FormData = { titleEn: "", titleBn: "", contentEn: "", contentBn: ""
 
 const PAGE_SIZE = 10;
 
+function Pagination({
+  page, totalPages, total, pageSize, onChange,
+}: {
+  page: number; totalPages: number; total: number; pageSize: number;
+  onChange: (p: number) => void;
+}) {
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+
+  const pages = useMemo(() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const result: (number | "...")[] = [1];
+    if (page > 3) result.push("...");
+    for (let p = Math.max(2, page - 1); p <= Math.min(totalPages - 1, page + 1); p++) result.push(p);
+    if (page < totalPages - 2) result.push("...");
+    result.push(totalPages);
+    return result;
+  }, [page, totalPages]);
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-1">
+      <p className="text-sm text-slate-500">
+        {total === 0 ? "কোনো ফলাফল নেই" : `${from}–${to} দেখানো হচ্ছে, মোট ${total}টি`}
+      </p>
+      <div className="flex items-center gap-1">
+        <button onClick={() => onChange(1)} disabled={page === 1}
+          className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors" title="প্রথম পৃষ্ঠা">
+          <ChevronsLeft size={15} />
+        </button>
+        <button onClick={() => onChange(page - 1)} disabled={page === 1}
+          className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors" title="আগের পৃষ্ঠা">
+          <ChevronLeft size={15} />
+        </button>
+        {pages.map((p, i) =>
+          p === "..." ? (
+            <span key={`ellipsis-${i}`} className="px-2 text-slate-400 text-sm select-none">…</span>
+          ) : (
+            <button key={p} onClick={() => onChange(p as number)}
+              className={`min-w-[34px] h-[34px] rounded-lg border text-sm font-medium transition-colors ${
+                p === page ? "bg-primary-600 text-white border-primary-600 shadow-sm" : "border-slate-200 text-slate-600 hover:bg-slate-50"
+              }`}>
+              {p}
+            </button>
+          )
+        )}
+        <button onClick={() => onChange(page + 1)} disabled={page === totalPages}
+          className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors" title="পরের পৃষ্ঠা">
+          <ChevronRight size={15} />
+        </button>
+        <button onClick={() => onChange(totalPages)} disabled={page === totalPages}
+          className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors" title="শেষ পৃষ্ঠা">
+          <ChevronsRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function NoticesPage() {
   const [data, setData] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +111,7 @@ export default function NoticesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<{ data: Notice[] }>("/notices")
@@ -116,9 +177,11 @@ export default function NoticesPage() {
       if (editing) {
         const res = await api.patch<{ data: Notice }>(`/notices/${editing.id}`, body);
         setData((prev) => prev.map((n) => n.id === editing.id ? res.data : n));
+        toast.success("নোটিস সফলভাবে আপডেট হয়েছে!");
       } else {
         const res = await api.post<{ data: Notice }>("/notices", body);
         setData((prev) => [res.data, ...prev]);
+        toast.success("নতুন নোটিস সফলভাবে যোগ হয়েছে!");
       }
       setModalOpen(false);
     } catch (e: unknown) {
@@ -126,9 +189,14 @@ export default function NoticesPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: string) => {
-    await api.delete(`/notices/${id}`).catch(() => {});
-    setData((prev) => prev.filter((n) => n.id !== id));
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await api.delete(`/notices/${deleteId}`).catch(() => {});
+    setData((prev) => prev.filter((n) => n.id !== deleteId));
+    setDeleteId(null);
+    toast.success("নোটিস সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
   const columns: Column<Notice>[] = [
@@ -190,18 +258,14 @@ export default function NoticesPage() {
 
       <AdminTable columns={columns} data={paginated} loading={loading} onEdit={openEdit} onDelete={handleDelete} emptyMessage="কোনো নোটিস পাওয়া যায়নি।" />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-slate-600">
-          <span>পৃষ্ঠা {safePage} / {totalPages}</span>
-          <div className="flex gap-1">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1} className="px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50">‹ আগে</button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).filter((p) => Math.abs(p - safePage) <= 2).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={`px-3 py-1.5 rounded-lg border transition-colors ${p === safePage ? "bg-primary-600 text-white border-primary-600" : "border-slate-200 hover:bg-slate-50"}`}>{p}</button>
-            ))}
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} className="px-3 py-1.5 rounded-lg border border-slate-200 disabled:opacity-40 hover:bg-slate-50">পরে ›</button>
-          </div>
-        </div>
-      )}
+      <Pagination page={safePage} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+
+      <ConfirmModal
+        open={!!deleteId}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        message="এই নোটিসটি স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?"
+      />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "নোটিস সম্পাদনা" : "নতুন নোটিস যোগ করুন"} width="max-w-xl">
         <form onSubmit={handleSave} className="flex flex-col gap-4">

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 import VideoUpload from "@/components/ui/VideoUpload";
 
@@ -33,6 +35,7 @@ export default function GalleryPage() {
   const [form, setForm] = useState<FormData>(empty);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<{ data: GalleryItem[] }>("/gallery")
@@ -63,9 +66,11 @@ export default function GalleryPage() {
       if (editing) {
         const res = await api.patch<{ data: GalleryItem }>(`/gallery/${editing.id}`, body);
         setData((prev) => prev.map((g) => g.id === editing.id ? res.data : g));
+        toast.success("গ্যালারি আইটেম সফলভাবে আপডেট হয়েছে!");
       } else {
         const res = await api.post<{ data: GalleryItem }>("/gallery", body);
         setData((prev) => [res.data, ...prev]);
+        toast.success("নতুন আইটেম সফলভাবে যোগ হয়েছে!");
       }
       setModalOpen(false);
     } catch (e: unknown) {
@@ -75,10 +80,14 @@ export default function GalleryPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("আপনি কি এটি মুছতে নিশ্চিত?")) return;
-    await api.delete(`/gallery/${id}`).catch(() => {});
-    setData((prev) => prev.filter((g) => g.id !== id));
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await api.delete(`/gallery/${deleteId}`).catch(() => {});
+    setData((prev) => prev.filter((g) => g.id !== deleteId));
+    setDeleteId(null);
+    toast.success("গ্যালারি আইটেম সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
   return (
@@ -126,6 +135,13 @@ export default function GalleryPage() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteId}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        message="এই আইটেমটি স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?"
+      />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "গ্যালারি সম্পাদনা" : "নতুন ছবি যোগ করুন"} width="max-w-md">
         <form onSubmit={handleSave} className="flex flex-col gap-4">

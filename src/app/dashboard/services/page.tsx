@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Plus, Search, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import AdminTable, { type Column } from "@/components/ui/AdminTable";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
 interface ServicePackage {
@@ -79,6 +81,7 @@ export default function ServicesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"info" | "features" | "basic" | "standard" | "premium">("info");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<{ data: Service[] }>("/services")
@@ -156,9 +159,11 @@ export default function ServicesPage() {
       if (editing) {
         const res = await api.patch<{ data: Service }>(`/services/${editing.id}`, body);
         setData((prev) => prev.map((s) => s.id === editing.id ? res.data : s));
+        toast.success("সেবা সফলভাবে আপডেট হয়েছে!");
       } else {
         const res = await api.post<{ data: Service }>("/services", body);
         setData((prev) => [res.data, ...prev]);
+        toast.success("নতুন সেবা সফলভাবে যোগ হয়েছে!");
       }
       setModalOpen(false);
     } catch (e: unknown) {
@@ -168,9 +173,14 @@ export default function ServicesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await api.delete(`/services/${id}`).catch(() => {});
-    setData((prev) => prev.filter((s) => s.id !== id));
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await api.delete(`/services/${deleteId}`).catch(() => {});
+    setData((prev) => prev.filter((s) => s.id !== deleteId));
+    setDeleteId(null);
+    toast.success("সেবা সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
   const columns: Column<Service>[] = [
@@ -226,6 +236,13 @@ export default function ServicesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteId}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        message="এই সেবাটি স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?"
+      />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "সেবা সম্পাদনা" : "নতুন সেবা যোগ করুন"} width="max-w-3xl">
         <form onSubmit={handleSave} className="flex flex-col gap-0">

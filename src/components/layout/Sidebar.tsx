@@ -13,19 +13,19 @@ const navItems = [
   { href: "/dashboard", label: "ড্যাশবোর্ড", Icon: LayoutDashboard },
   { href: "/dashboard/services", label: "সেবাসমূহ", Icon: Briefcase },
   { href: "/dashboard/other-services", label: "অন্যান্য সেবা", Icon: Plus },
-  { href: "/dashboard/training", label: "প্রশিক্ষণ", Icon: BookOpen },
-  { href: "/dashboard/enrollments", label: "ভর্তি আবেদন", Icon: GraduationCap },
+  { href: "/dashboard/training", label: "প্রশিক্ষণ প্রোগ্রাম", Icon: BookOpen },
   { href: "/dashboard/bookings", label: "বুকিংসমূহ", Icon: Calendar },
-  { href: "/dashboard/applications", label: "চাকরি আবেদন", Icon: Users },
+  { href: "/dashboard/enrollments", label: "ভর্তি আবেদনসমূহ", Icon: GraduationCap },
+  { href: "/dashboard/applications", label: "চাকরি আবেদনসমূহ", Icon: Users },
   { href: "/dashboard/notices", label: "নোটিসসমূহ", Icon: Bell },
   { href: "/dashboard/reviews", label: "রিভিউসমূহ", Icon: Star },
   { href: "/dashboard/gallery", label: "গ্যালারি", Icon: ImageIcon },
   { href: "/dashboard/banners", label: "ব্যানার", Icon: Megaphone },
-  { href: "/dashboard/contacts", label: "যোগাযোগ", Icon: MessageSquare },
-  { href: "/dashboard/team", label: "টিম সদস্য", Icon: UserCircle },
   { href: "/dashboard/staff", label: "কর্মীবৃন্দ", Icon: Users },
-  { href: "/dashboard/settings", label: "সাইট সেটিংস", Icon: Settings },
+  { href: "/dashboard/team", label: "টিম সদস্য", Icon: UserCircle },
   { href: "/dashboard/sms", label: "SMS পাঠান", Icon: Smartphone },
+  { href: "/dashboard/contacts", label: "যোগাযোগ", Icon: MessageSquare },
+  { href: "/dashboard/settings", label: "সাইট সেটিংস", Icon: Settings },
 ];
 
 interface SidebarProps {
@@ -78,21 +78,6 @@ export default function Sidebar({ open = true, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* User info */}
-        {user && (
-          <div className="px-5 py-3 border-b border-navy-800">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-700 text-white text-sm font-bold">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="text-white text-sm font-medium truncate">{user.name}</p>
-                <p className="text-white/40 text-xs truncate">{user.email}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-3">
           {navItems.map(({ href, label, Icon }) => {
@@ -118,12 +103,23 @@ export default function Sidebar({ open = true, onClose }: SidebarProps) {
 
         {/* Logout */}
         <div className="p-3 border-t border-navy-800">
+          {user && (
+            <div className="flex items-center gap-3 px-3 py-2.5 mb-1">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-700 text-white text-sm font-bold">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-white text-sm font-medium truncate">{user.name}</p>
+                <p className="text-white/40 text-xs truncate">{user.email}</p>
+              </div>
+            </div>
+          )}
           <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors"
           >
             <LogOut size={18} />
-            লগ আউট
+            Log Out
           </button>
         </div>
       </aside>

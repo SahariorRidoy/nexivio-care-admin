@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { assetUrl } from "@/lib/utils";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
 interface StaffMember {
@@ -44,6 +46,7 @@ export default function StaffPage() {
   const [form, setForm] = useState<FormData>(empty);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<{ data: StaffMember[] }>("/staff/all")
@@ -100,9 +103,11 @@ export default function StaffPage() {
       if (editing) {
         const res = await api.patch<{ data: StaffMember }>(`/staff/${editing.id}`, body);
         setData((prev) => prev.map((m) => m.id === editing.id ? res.data : m));
+        toast.success("কর্মীর তথ্য সফলভাবে আপডেট হয়েছে!");
       } else {
         const res = await api.post<{ data: StaffMember }>("/staff", body);
         setData((prev) => [...prev, res.data]);
+        toast.success("নতুন কর্মী সফলভাবে যোগ হয়েছে!");
       }
       setModalOpen(false);
     } catch (err: unknown) {
@@ -110,10 +115,14 @@ export default function StaffPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("এই কর্মীকে মুছতে নিশ্চিত?")) return;
-    await api.delete(`/staff/${id}`).catch(() => {});
-    setData((prev) => prev.filter((m) => m.id !== id));
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await api.delete(`/staff/${deleteId}`).catch(() => {});
+    setData((prev) => prev.filter((m) => m.id !== deleteId));
+    setDeleteId(null);
+    toast.success("কর্মী সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
   return (
@@ -174,6 +183,13 @@ export default function StaffPage() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteId}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        message="এই কর্মীকে স্থায়ীভাবে মুছে ফেলা হবে। আপনি কি নিশ্চিত?"
+      />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "কর্মী সম্পাদনা" : "নতুন কর্মী যোগ করুন"} width="max-w-2xl">
         <form onSubmit={handleSave} className="flex flex-col gap-4">

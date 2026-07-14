@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import ImageUpload from "@/components/ui/ImageUpload";
 
@@ -48,7 +49,6 @@ export default function SettingsPage() {
   const [form, setForm] = useState<Settings>(empty);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -63,11 +63,10 @@ export default function SettingsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true); setError(""); setSuccess(false);
+    setSaving(true); setError("");
     try {
       await api.patch("/settings", form);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      toast.success("সেটিংস সফলভাবে সংরক্ষিত হয়েছে!");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "সংরক্ষণ ব্যর্থ হয়েছে");
     } finally {
@@ -211,7 +210,6 @@ export default function SettingsPage() {
         </Section>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
-        {success && <p className="text-sm text-green-600 font-medium">✓ সেটিংস সফলভাবে সংরক্ষিত হয়েছে</p>}
 
         <div className="flex justify-end pb-8">
           <button

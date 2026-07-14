@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Plus, Search } from "lucide-react";
+import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { formatDate, assetUrl } from "@/lib/utils";
 import AdminTable, { type Column } from "@/components/ui/AdminTable";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
 type BannerType = 'offer' | 'campaign' | 'training' | 'service';
@@ -54,6 +56,7 @@ export default function BannersPage() {
   const [form, setForm] = useState<FormData>(empty);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<{ data: Banner[] }>("/banners")
@@ -101,9 +104,11 @@ export default function BannersPage() {
       if (editing) {
         const res = await api.patch<{ data: Banner }>(`/banners/${editing.id}`, body);
         setData((prev) => prev.map((b) => b.id === editing.id ? res.data : b));
+        toast.success("ব্যানার সফলভাবে আপডেট হয়েছে!");
       } else {
         const res = await api.post<{ data: Banner }>("/banners", body);
         setData((prev) => [res.data, ...prev]);
+        toast.success("নতুন ব্যানার সফলভাবে যোগ হয়েছে!");
       }
       setModalOpen(false);
     } catch (e: unknown) {
@@ -113,9 +118,14 @@ export default function BannersPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await api.delete(`/banners/${id}`).catch(() => {});
-    setData((prev) => prev.filter((b) => b.id !== id));
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await api.delete(`/banners/${deleteId}`).catch(() => {});
+    setData((prev) => prev.filter((b) => b.id !== deleteId));
+    setDeleteId(null);
+    toast.success("ব্যানার সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
   const columns: Column<Banner>[] = [
@@ -179,6 +189,13 @@ export default function BannersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteId}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        message="এই ব্যানারটি স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?"
+      />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "ব্যানার সম্পাদনা" : "নতুন ব্যানার যোগ করুন"} width="max-w-xl">
         <form onSubmit={handleSave} className="flex flex-col gap-4">

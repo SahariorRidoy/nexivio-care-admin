@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Toaster } from "react-hot-toast";
 import Sidebar from "@/components/layout/Sidebar";
 import TopBar from "@/components/layout/TopBar";
 import { useAuth } from "@/context/AuthContext";
@@ -17,9 +18,9 @@ const routeTitles: Record<string, string> = {
   "/dashboard/reviews": "রিভিউসমূহ",
   "/dashboard/gallery": "গ্যালারি",
   "/dashboard/banners": "ব্যানার",
-  "/dashboard/contacts": "যোগাযোগ",
   "/dashboard/team": "টিম সদস্য",
   "/dashboard/staff": "কর্মীবৃন্দ",
+  "/dashboard/contacts": "যোগাযোগ",
   "/dashboard/settings": "সাইট সেটিংস",
 };
 
@@ -58,6 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
+        <Toaster position="bottom-right" toastOptions={{ duration: 3000 }} />
       </div>
     </div>
   );

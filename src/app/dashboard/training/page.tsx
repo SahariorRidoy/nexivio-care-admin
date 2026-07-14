@@ -5,7 +5,9 @@ import { Plus, Search, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import AdminTable, { type Column } from "@/components/ui/AdminTable";
+import toast from "react-hot-toast";
 import Modal from "@/components/ui/Modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
 interface SyllabusModule {
@@ -64,6 +66,7 @@ export default function TrainingPage() {
   const [form, setForm] = useState<FormData>(empty);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<{ data: Training[] }>("/training")
@@ -118,9 +121,11 @@ export default function TrainingPage() {
       if (editing) {
         const res = await api.patch<{ data: Training }>(`/training/${editing.id}`, body);
         setData((prev) => prev.map((t) => t.id === editing.id ? res.data : t));
+        toast.success("প্রোগ্রাম সফলভাবে আপডেট হয়েছে!");
       } else {
         const res = await api.post<{ data: Training }>("/training", body);
         setData((prev) => [res.data, ...prev]);
+        toast.success("নতুন প্রোগ্রাম সফলভাবে যোগ হয়েছে!");
       }
       setModalOpen(false);
     } catch (e: unknown) {
@@ -130,9 +135,14 @@ export default function TrainingPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await api.delete(`/training/${id}`).catch(() => {});
-    setData((prev) => prev.filter((t) => t.id !== id));
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await api.delete(`/training/${deleteId}`).catch(() => {});
+    setData((prev) => prev.filter((t) => t.id !== deleteId));
+    setDeleteId(null);
+    toast.success("প্রোগ্রাম সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
   const columns: Column<Training>[] = [
@@ -181,6 +191,13 @@ export default function TrainingPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteId}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        message="এই প্রোগ্রামটি স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?"
+      />
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "প্রোগ্রাম সম্পাদনা" : "নতুন প্রোগ্রাম যোগ করুন"} width="max-w-2xl">
         <form onSubmit={handleSave} className="flex flex-col gap-4">
