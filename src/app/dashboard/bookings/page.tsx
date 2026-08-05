@@ -13,6 +13,9 @@ interface Booking {
   name: string;
   phone: string;
   address?: string;
+  patientName?: string;
+  patientGender?: string;
+  relationship?: string;
   serviceType: string;
   packageName?: string;
   date?: string;
@@ -171,8 +174,26 @@ export default function BookingsPage() {
   };
 
   const columns: Column<Booking>[] = [
-    { key: "name", label: "নাম" },
-    { key: "phone", label: "ফোন" },
+    { key: "name", label: "নাম",
+      render: (r) => (
+        <div>
+          <div className="font-medium">{r.name}</div>
+          <div className="text-xs text-slate-400">{r.phone}</div>
+        </div>
+      ),
+    },
+    {
+      key: "patientName",
+      label: "রোগীর তথ্য",
+      render: (r) => r.patientName ? (
+        <div>
+          <div className="font-medium">{r.patientName}</div>
+          <div className="text-xs text-slate-400 capitalize">
+            {r.patientGender || "—"}{r.relationship ? ` · ${r.relationship}` : ""}
+          </div>
+        </div>
+      ) : <span className="text-slate-300">—</span>,
+    },
     {
       key: "address",
       label: "ঠিকানা",
