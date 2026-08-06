@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Briefcase, Calendar, Users, Bell,
-  Star, ImageIcon, Megaphone, BookOpen, MessageSquare, LogOut, X, Settings, UserCircle, Plus, GraduationCap, Smartphone,
+  Star, ImageIcon, Megaphone, BookOpen, MessageSquare, LogOut, X, Settings, UserCircle, Plus, GraduationCap, Smartphone, Car, Truck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,8 @@ const navItems = [
   { href: "/dashboard/other-services", label: "অন্যান্য সেবা", Icon: Plus },
   { href: "/dashboard/training", label: "প্রশিক্ষণ প্রোগ্রাম", Icon: BookOpen },
   { href: "/dashboard/bookings", label: "বুকিংসমূহ", Icon: Calendar },
+  { href: "/dashboard/vehicle-registrations", label: "গাড়ি নিবন্ধন", Icon: Car },
+  { href: "/dashboard/transport-bookings", label: "ট্রান্সপোর্ট বুকিং", Icon: Truck },
   { href: "/dashboard/enrollments", label: "ভর্তি আবেদনসমূহ", Icon: GraduationCap },
   { href: "/dashboard/applications", label: "চাকরি আবেদনসমূহ", Icon: Users },
   { href: "/dashboard/notices", label: "নোটিসসমূহ", Icon: Bell },

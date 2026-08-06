@@ -6,7 +6,7 @@ import {
   Calendar, Users, Star, MessageSquare, Bell, Briefcase,
   BookOpen, Megaphone, TrendingUp, Clock, CheckCircle,
   AlertCircle, ArrowRight, GraduationCap, Plus, Smartphone,
-  Activity, BarChart3, Zap,
+  Activity, BarChart3, Zap, Car, Truck,
 } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -21,6 +21,10 @@ interface Stats {
   activeServices: number;
   activeTraining: number;
   activeBanners: number;
+  totalVehicleRegistrations?: number;
+  pendingVehicleRegistrations?: number;
+  totalTransportBookings?: number;
+  pendingTransportBookings?: number;
 }
 
 const defaultStats: Stats = {
@@ -29,6 +33,8 @@ const defaultStats: Stats = {
   totalReviews: 0, pendingReviews: 0,
   totalContacts: 0, activeServices: 0,
   activeTraining: 0, activeBanners: 0,
+  totalVehicleRegistrations: 0, pendingVehicleRegistrations: 0,
+  totalTransportBookings: 0, pendingTransportBookings: 0,
 };
 
 function SkeletonCard() {
@@ -110,11 +116,24 @@ export default function DashboardPage() {
   useEffect(() => {
     api.get<{ data: Stats }>("/admin/stats")
       .then((r) => setStats(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {});
+    // Fetch transport stats separately
+    Promise.all([
+      api.get<{ data: { id: string; status: string }[] }>("/vehicle-registrations").catch(() => ({ data: [] })),
+      api.get<{ data: { id: string; status: string }[] }>("/transport-bookings").catch(() => ({ data: [] })),
+    ]).then(([vr, tb]) => {
+      setStats((prev) => ({
+        ...prev,
+        totalVehicleRegistrations: vr.data.length,
+        pendingVehicleRegistrations: vr.data.filter((r) => r.status === "pending").length,
+        totalTransportBookings: tb.data.length,
+        pendingTransportBookings: tb.data.filter((b) => b.status === "pending").length,
+      }));
+    }).finally(() => setLoading(false));
   }, []);
 
-  const totalPending = stats.pendingBookings + stats.pendingApplications + stats.pendingReviews;
+  const totalPending = stats.pendingBookings + stats.pendingApplications + stats.pendingReviews
+    + (stats.pendingVehicleRegistrations ?? 0) + (stats.pendingTransportBookings ?? 0);
   const now = new Date();
   const timeStr = now.toLocaleTimeString("bn-BD", { hour: "2-digit", minute: "2-digit" });
   const dateStr = now.toLocaleDateString("bn-BD", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
@@ -169,6 +188,14 @@ export default function DashboardPage() {
             Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
           ) : (
             <>
+              <StatCard title="গাড়ি নিবন্ধন" value={stats.totalVehicleRegistrations ?? 0} icon={Car}
+                gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
+                badge={(stats.pendingVehicleRegistrations ?? 0) > 0 ? `${stats.pendingVehicleRegistrations} নতুন` : undefined}
+                badgeColor="bg-emerald-50 text-emerald-600" href="/dashboard/vehicle-registrations" />
+              <StatCard title="ট্রান্সপোর্ট বুকিং" value={stats.totalTransportBookings ?? 0} icon={Truck}
+                gradient="bg-gradient-to-br from-cyan-500 to-blue-600"
+                badge={(stats.pendingTransportBookings ?? 0) > 0 ? `${stats.pendingTransportBookings} নতুন` : undefined}
+                badgeColor="bg-cyan-50 text-cyan-600" href="/dashboard/transport-bookings" />
               <StatCard title="মোট বুকিং" value={stats.totalBookings} icon={Calendar}
                 gradient="bg-gradient-to-br from-blue-500 to-blue-600"
                 badge={stats.pendingBookings > 0 ? `${stats.pendingBookings} নতুন` : undefined}
@@ -211,6 +238,8 @@ export default function DashboardPage() {
             <h3 className="text-sm font-semibold text-slate-700">দ্রুত অ্যাকশন</h3>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            <QuickAction href="/dashboard/vehicle-registrations" icon={Car} label="গাড়ি নিবন্ধন" color="bg-gradient-to-br from-emerald-500 to-teal-600" />
+            <QuickAction href="/dashboard/transport-bookings" icon={Truck} label="ট্রান্সপোর্ট" color="bg-gradient-to-br from-cyan-500 to-blue-600" />
             <QuickAction href="/dashboard/bookings" icon={Calendar} label="বুকিং" color="bg-gradient-to-br from-blue-500 to-blue-600" />
             <QuickAction href="/dashboard/applications" icon={Users} label="আবেদন" color="bg-gradient-to-br from-violet-500 to-purple-600" />
             <QuickAction href="/dashboard/notices" icon={Bell} label="নোটিস" color="bg-gradient-to-br from-navy-800 to-navy-950" />
@@ -270,6 +299,10 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-1">
+              <PendingItem icon={Car} label="গাড়ি নিবন্ধন" count={stats.pendingVehicleRegistrations ?? 0}
+                color="bg-gradient-to-br from-emerald-500 to-teal-600" href="/dashboard/vehicle-registrations" />
+              <PendingItem icon={Truck} label="ট্রান্সপোর্ট বুকিং" count={stats.pendingTransportBookings ?? 0}
+                color="bg-gradient-to-br from-cyan-500 to-blue-600" href="/dashboard/transport-bookings" />
               <PendingItem icon={Calendar} label="বুকিং অনুমোদন" count={stats.pendingBookings}
                 color="bg-gradient-to-br from-blue-500 to-blue-600" href="/dashboard/bookings" />
               <PendingItem icon={Users} label="চাকরি আবেদন" count={stats.pendingApplications}
