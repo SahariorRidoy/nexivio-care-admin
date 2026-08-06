@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Trash2, Pencil, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Trash2, Eye, CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface Column<T> {
@@ -96,10 +96,10 @@ export default function AdminTable<T extends { id: string }>({
                     {onEdit && (
                       <button
                         onClick={() => onEdit(row)}
-                        className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="সম্পাদনা"
+                        className="p-1.5 rounded-md text-primary-600 hover:bg-primary-50 transition-colors"
+                        title="বিবরণ দেখুন"
                       >
-                        <Pencil size={16} />
+                        <Eye size={16} />
                       </button>
                     )}
                     {onDelete && (
