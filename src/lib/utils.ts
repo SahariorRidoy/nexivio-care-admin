@@ -8,8 +8,27 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("bn-BD", {
     year: "numeric",
-    month: "short",
+    month: "long",
     day: "numeric",
+    timeZone: "Asia/Dhaka",
+  });
+}
+
+export function formatTime(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+export function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString("bn-BD", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Dhaka",
   });
 }
 

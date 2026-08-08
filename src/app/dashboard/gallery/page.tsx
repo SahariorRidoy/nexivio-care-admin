@@ -113,7 +113,6 @@ export default function GalleryPage() {
           {data.map((item) => (
             <div key={item.id} className="relative group rounded-xl overflow-hidden border border-slate-100 shadow-sm aspect-square bg-slate-100">
               {item.type === "video" ? (
-                // eslint-disable-next-line jsx-a11y/media-has-caption
                 <video src={assetUrl(item.url)} className="w-full h-full object-cover" />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element

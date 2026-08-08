@@ -21,10 +21,6 @@ interface Settings {
   logoPublicId: string | null;
   qrImageUrl: string | null;
   qrPublicId: string | null;
-  missionEn: string | null;
-  missionBn: string | null;
-  visionEn: string | null;
-  visionBn: string | null;
   bkashBaseUrl: string | null;
   bkashAppKey: string | null;
   bkashAppSecret: string | null;
@@ -38,8 +34,7 @@ const empty: Settings = {
   phone: "", whatsapp: "", email: "", address: "", businessHours: "",
   mapEmbedUrl: "", facebookUrl: "", youtubeUrl: "", linkedinUrl: "",
   instagramUrl: "", messengerUrl: "", logoUrl: null, logoPublicId: null,
-  qrImageUrl: null, qrPublicId: null, missionEn: "", missionBn: "",
-  visionEn: "", visionBn: "",
+  qrImageUrl: null, qrPublicId: null,
   bkashBaseUrl: "https://tokenized.sandbox.bka.sh/v1.2.0-beta",
   bkashAppKey: "", bkashAppSecret: "", bkashUsername: "", bkashPassword: "",
   smsApiKey: "", smsSenderId: "",
@@ -152,24 +147,6 @@ export default function SettingsPage() {
                 onChange={(url, publicId) => { set("qrImageUrl", url); set("qrPublicId", publicId); }}
                 onClear={() => { set("qrImageUrl", null); set("qrPublicId", null); }}
               />
-            </Field>
-          </div>
-        </Section>
-
-        {/* Mission & Vision */}
-        <Section title="মিশন ও ভিশন">
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="মিশন (ইংরেজি)">
-              <textarea rows={3} value={form.missionEn ?? ""} onChange={(e) => set("missionEn", e.target.value)} className={inp} />
-            </Field>
-            <Field label="মিশন (বাংলা)">
-              <textarea rows={3} value={form.missionBn ?? ""} onChange={(e) => set("missionBn", e.target.value)} className={inp} />
-            </Field>
-            <Field label="ভিশন (ইংরেজি)">
-              <textarea rows={3} value={form.visionEn ?? ""} onChange={(e) => set("visionEn", e.target.value)} className={inp} />
-            </Field>
-            <Field label="ভিশন (বাংলা)">
-              <textarea rows={3} value={form.visionBn ?? ""} onChange={(e) => set("visionBn", e.target.value)} className={inp} />
             </Field>
           </div>
         </Section>

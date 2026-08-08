@@ -96,10 +96,11 @@ export default function AdminTable<T extends { id: string }>({
                     {onEdit && (
                       <button
                         onClick={() => onEdit(row)}
-                        className="p-1.5 rounded-md text-primary-600 hover:bg-primary-50 transition-colors"
-                        title="বিবরণ দেখুন"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-primary-600 hover:bg-primary-50 transition-colors text-xs font-medium"
+                        title="সম্পাদনা"
                       >
-                        <Eye size={16} />
+                        <Eye size={13} />
+                        Edit
                       </button>
                     )}
                     {onDelete && (
