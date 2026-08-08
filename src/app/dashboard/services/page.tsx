@@ -14,6 +14,8 @@ interface ServicePackage {
   tier: "basic" | "standard" | "premium";
   nameEn: string;
   nameBn: string;
+  descriptionEn: string;
+  descriptionBn: string;
   dutyHours: number;
   dailyPrice: number;
   weeklyPrice: number;
@@ -41,9 +43,9 @@ interface Service {
 }
 
 const DEFAULT_PACKAGES: ServicePackage[] = [
-  { tier: "basic",    nameEn: "Basic",    nameBn: "বেসিক",        dutyHours: 8,  dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0, includedFeatures: [] },
-  { tier: "standard", nameEn: "Standard", nameBn: "স্ট্যান্ডার্ড", dutyHours: 12, dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0, includedFeatures: [] },
-  { tier: "premium",  nameEn: "Premium",  nameBn: "প্রিমিয়াম",    dutyHours: 24, dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0, includedFeatures: [] },
+  { tier: "basic",    nameEn: "", nameBn: "", descriptionEn: "", descriptionBn: "", dutyHours: 8,  dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0, includedFeatures: [] },
+  { tier: "standard", nameEn: "", nameBn: "", descriptionEn: "", descriptionBn: "", dutyHours: 12, dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0, includedFeatures: [] },
+  { tier: "premium",  nameEn: "", nameBn: "", descriptionEn: "", descriptionBn: "", dutyHours: 24, dailyPrice: 0, weeklyPrice: 0, monthlyPrice: 0, includedFeatures: [] },
 ];
 
 type FormData = {
@@ -68,7 +70,14 @@ const empty: FormData = {
 
 const PAGE_SIZE = 10;
 const TIERS = ["basic", "standard", "premium"] as const;
-const TIER_LABELS = { basic: "বেসিক", standard: "স্ট্যান্ডার্ড", premium: "প্রিমিয়াম" };
+const TIER_FALLBACK = { basic: "বেসিক", standard: "স্ট্যান্ডার্ড", premium: "প্রিমিয়াম" };
+
+const CATEGORY_OPTIONS = [
+  { value: "caregiver",   label: "🤝 Caregiver Service" },
+  { value: "nursing",     label: "🩺 Nursing Service" },
+  { value: "elder-care",  label: "👴 Elder Care" },
+  { value: "nanny-care",  label: "👶 Nanny Care" },
+];
 
 export default function ServicesPage() {
   const [data, setData] = useState<Service[]>([]);
@@ -111,7 +120,13 @@ export default function ServicesPage() {
       isActive: row.isActive, order: row.order,
       featuresEn: row.featuresEn ?? [],
       featuresBn: row.featuresBn ?? [],
-      packages: row.packages && row.packages.length === 3 ? row.packages : DEFAULT_PACKAGES.map((p) => ({ ...p })),
+      packages: row.packages && (row.packages as ServicePackage[]).length === 3
+        ? (row.packages as ServicePackage[]).map((p) => ({
+            ...p,
+            descriptionEn: p.descriptionEn ?? "",
+            descriptionBn: p.descriptionBn ?? "",
+          }))
+        : DEFAULT_PACKAGES.map((p) => ({ ...p })),
     });
     setError(""); setActiveTab("info"); setModalOpen(true);
   };
@@ -201,7 +216,10 @@ export default function ServicesPage() {
   const TABS = [
     { key: "info", label: "তথ্য" },
     { key: "features", label: "ফিচার লিস্ট" },
-    ...TIERS.map((t) => ({ key: t, label: TIER_LABELS[t] })),
+    ...TIERS.map((t) => {
+      const pkg = form.packages.find((p) => p.tier === t);
+      return { key: t, label: pkg?.nameBn || TIER_FALLBACK[t] };
+    }),
   ] as const;
 
   return (
@@ -268,11 +286,15 @@ export default function ServicesPage() {
                 <Field label="সংক্ষিপ্ত বিবরণ (ইংরেজি)"><textarea rows={2} value={form.shortDescEn} onChange={(e) => set("shortDescEn", e.target.value)} className={inp} /></Field>
                 <Field label="সংক্ষিপ্ত বিবরণ (বাংলা)"><textarea rows={2} value={form.shortDescBn} onChange={(e) => set("shortDescBn", e.target.value)} className={inp} /></Field>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="বিস্তারিত বিবরণ (ইংরেজি)"><textarea rows={4} value={form.descriptionEn} onChange={(e) => set("descriptionEn", e.target.value)} className={inp} /></Field>
-                <Field label="বিস্তারিত বিবরণ (বাংলা)"><textarea rows={4} value={form.descriptionBn} onChange={(e) => set("descriptionBn", e.target.value)} className={inp} /></Field>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <Field label="ক্যাটাগরি">
+                  <select value={form.category} onChange={(e) => set("category", e.target.value)} className={inp}>
+                    <option value="">— ক্যাটাগরি —</option>
+                    {CATEGORY_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </Field>
                 <Field label="ক্রম"><input type="number" value={form.order} onChange={(e) => set("order", e.target.value)} className={inp} /></Field>
                 <Field label="অবস্থা">
                   <label className="flex items-center gap-2 mt-2 cursor-pointer">
@@ -280,6 +302,10 @@ export default function ServicesPage() {
                     <span className="text-sm text-slate-700">সক্রিয়</span>
                   </label>
                 </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="বিস্তারিত বিবরণ (ইংরেজি)"><textarea rows={4} value={form.descriptionEn} onChange={(e) => set("descriptionEn", e.target.value)} className={inp} /></Field>
+                <Field label="বিস্তারিত বিবরণ (বাংলা)"><textarea rows={4} value={form.descriptionBn} onChange={(e) => set("descriptionBn", e.target.value)} className={inp} /></Field>
               </div>
               <Field label="ছবি">
                 <ImageUpload
@@ -321,6 +347,10 @@ export default function ServicesPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="নাম (ইংরেজি)"><input value={pkg.nameEn} onChange={(e) => setPkg(tier, "nameEn", e.target.value)} className={inp} /></Field>
                   <Field label="নাম (বাংলা)"><input value={pkg.nameBn} onChange={(e) => setPkg(tier, "nameBn", e.target.value)} className={inp} /></Field>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="ট্যাগলাইন (ইংরেজি)"><input value={pkg.descriptionEn} onChange={(e) => setPkg(tier, "descriptionEn", e.target.value)} placeholder="e.g. Compassionate daily support..." className={inp} /></Field>
+                  <Field label="ট্যাগলাইন (বাংলা)"><input value={pkg.descriptionBn} onChange={(e) => setPkg(tier, "descriptionBn", e.target.value)} placeholder="যেমন: আন্তরিক যত্ন ও সহমর্মিতার সঙ্গে..." className={inp} /></Field>
                 </div>
                 <Field label="ডিউটি আওয়ার (ঘণ্টা/দিন)">
                   <input type="number" value={pkg.dutyHours} onChange={(e) => setPkg(tier, "dutyHours", Number(e.target.value))} className={inp} />
