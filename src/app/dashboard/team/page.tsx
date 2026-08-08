@@ -9,6 +9,13 @@ import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
+interface Service {
+  id: string;
+  nameEn: string;
+  nameBn: string;
+  slug: string;
+}
+
 interface TeamMember {
   id: string;
   nameEn: string;
@@ -18,6 +25,8 @@ interface TeamMember {
   image: string | null;
   imagePublicId: string | null;
   bio: string | null;
+  serviceId: string | null;
+  service: Service | null;
   order: number;
   isActive: boolean;
 }
@@ -26,16 +35,17 @@ interface FormData {
   nameEn: string; nameBn: string;
   roleEn: string; roleBn: string;
   image: string | null; imagePublicId: string | null;
-  bio: string; order: string; isActive: boolean;
+  bio: string; serviceId: string; order: string; isActive: boolean;
 }
 
 const empty: FormData = {
   nameEn: "", nameBn: "", roleEn: "", roleBn: "",
-  image: null, imagePublicId: null, bio: "", order: "0", isActive: true,
+  image: null, imagePublicId: null, bio: "", serviceId: "", order: "0", isActive: true,
 };
 
 export default function TeamPage() {
   const [data, setData] = useState<TeamMember[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<TeamMember | null>(null);
@@ -43,10 +53,17 @@ export default function TeamPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filterServiceId, setFilterServiceId] = useState("");
 
   useEffect(() => {
-    api.get<{ data: TeamMember[] }>("/team/all")
-      .then((r) => setData(r.data))
+    Promise.all([
+      api.get<{ data: TeamMember[] }>("/team/all"),
+      api.get<{ data: Service[] }>("/services"),
+    ])
+      .then(([teamRes, servicesRes]) => {
+        setData(teamRes.data);
+        setServices(servicesRes.data);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -58,7 +75,8 @@ export default function TeamPage() {
       nameEn: m.nameEn, nameBn: m.nameBn,
       roleEn: m.roleEn ?? "", roleBn: m.roleBn ?? "",
       image: m.image, imagePublicId: m.imagePublicId,
-      bio: m.bio ?? "", order: String(m.order), isActive: m.isActive,
+      bio: m.bio ?? "", serviceId: m.serviceId ?? "",
+      order: String(m.order), isActive: m.isActive,
     });
     setError(""); setModalOpen(true);
   };
@@ -74,7 +92,9 @@ export default function TeamPage() {
         nameEn: form.nameEn, nameBn: form.nameBn,
         roleEn: form.roleEn || undefined, roleBn: form.roleBn || undefined,
         image: form.image || undefined, imagePublicId: form.imagePublicId || undefined,
-        bio: form.bio || undefined, order: Number(form.order), isActive: form.isActive,
+        bio: form.bio || undefined,
+        serviceId: form.serviceId || null,
+        order: Number(form.order), isActive: form.isActive,
       };
       if (editing) {
         const res = await api.patch<{ data: TeamMember }>(`/team/${editing.id}`, body);
@@ -91,8 +111,6 @@ export default function TeamPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = (id: string) => setDeleteId(id);
-
   const confirmDelete = async () => {
     if (!deleteId) return;
     await api.delete(`/team/${deleteId}`).catch(() => {});
@@ -101,27 +119,46 @@ export default function TeamPage() {
     toast.success("সদস্য সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
+  const filtered = filterServiceId
+    ? data.filter((m) => m.serviceId === filterServiceId)
+    : data;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-slate-800">টিম সদস্যবৃন্দ</h2>
-          <p className="text-sm text-slate-500">{data.length}জন সদস্য</p>
+          <p className="text-sm text-slate-500">{filtered.length}জন সদস্য</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
           <Plus size={16} /> নতুন সদস্য
         </button>
       </div>
 
+      {/* Filter by service */}
+      <div className="mb-5">
+        <select
+          value={filterServiceId}
+          onChange={(e) => setFilterServiceId(e.target.value)}
+          className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300"
+        >
+          <option value="">সকল সার্ভিস</option>
+          {services.map((s) => (
+            <option key={s.id} value={s.id}>{s.nameBn}</option>
+          ))}
+          <option value="__none__">সার্ভিস নেই</option>
+        </select>
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
         </div>
-      ) : data.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400 text-sm">কোনো টিম সদস্য নেই।</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {data.map((m) => (
+          {(filterServiceId === "__none__" ? data.filter((m) => !m.serviceId) : filtered).map((m) => (
             <div key={m.id} className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
               <div className="aspect-square bg-slate-100">
                 {m.image ? (
@@ -136,6 +173,9 @@ export default function TeamPage() {
               <div className="p-3">
                 <p className="font-semibold text-slate-800 text-sm truncate">{m.nameBn}</p>
                 {m.roleBn && <p className="text-xs text-slate-500 truncate">{m.roleBn}</p>}
+                {m.service && (
+                  <p className="text-xs text-primary-600 truncate mt-0.5">{m.service.nameBn}</p>
+                )}
                 <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${m.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
                   {m.isActive ? "সক্রিয়" : "নিষ্ক্রিয়"}
                 </span>
@@ -143,7 +183,7 @@ export default function TeamPage() {
                   <button onClick={() => openEdit(m)} className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600">
                     <Pencil size={12} /> সম্পাদনা
                   </button>
-                  <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 text-red-500">
+                  <button onClick={() => setDeleteId(m.id)} className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 text-red-500">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -168,6 +208,14 @@ export default function TeamPage() {
             <Field label="পদবি (ইংরেজি)"><input value={form.roleEn} onChange={(e) => set("roleEn", e.target.value)} className={inp} /></Field>
             <Field label="পদবি (বাংলা)"><input value={form.roleBn} onChange={(e) => set("roleBn", e.target.value)} className={inp} /></Field>
           </div>
+          <Field label="সার্ভিস">
+            <select value={form.serviceId} onChange={(e) => set("serviceId", e.target.value)} className={inp}>
+              <option value="">-- সার্ভিস নির্বাচন করুন --</option>
+              {services.map((s) => (
+                <option key={s.id} value={s.id}>{s.nameBn} ({s.nameEn})</option>
+              ))}
+            </select>
+          </Field>
           <Field label="সংক্ষিপ্ত পরিচয়">
             <textarea rows={2} value={form.bio} onChange={(e) => set("bio", e.target.value)} className={inp} />
           </Field>

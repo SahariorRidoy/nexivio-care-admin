@@ -9,6 +9,13 @@ import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
+interface Service {
+  id: string;
+  nameEn: string;
+  nameBn: string;
+  slug: string;
+}
+
 interface StaffMember {
   id: string;
   nameEn: string;
@@ -19,6 +26,8 @@ interface StaffMember {
   imagePublicId: string | null;
   pointsEn: string[];
   pointsBn: string[];
+  serviceId: string | null;
+  service: Service | null;
   order: number;
   isActive: boolean;
 }
@@ -28,6 +37,7 @@ interface FormData {
   designationEn: string; designationBn: string;
   image: string | null; imagePublicId: string | null;
   pointsEn: string[]; pointsBn: string[];
+  serviceId: string;
   order: string; isActive: boolean;
 }
 
@@ -35,11 +45,14 @@ const empty: FormData = {
   nameEn: "", nameBn: "", designationEn: "", designationBn: "",
   image: null, imagePublicId: null,
   pointsEn: ["", ""], pointsBn: ["", ""],
+  serviceId: "",
   order: "0", isActive: true,
 };
 
 export default function StaffPage() {
   const [data, setData] = useState<StaffMember[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [filterServiceId, setFilterServiceId] = useState("");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
@@ -49,8 +62,14 @@ export default function StaffPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get<{ data: StaffMember[] }>("/staff/all")
-      .then((r) => setData(r.data))
+    Promise.all([
+      api.get<{ data: StaffMember[] }>("/staff/all"),
+      api.get<{ data: Service[] }>("/services"),
+    ])
+      .then(([staffRes, servicesRes]) => {
+        setData(staffRes.data);
+        setServices(servicesRes.data);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -64,6 +83,7 @@ export default function StaffPage() {
       image: m.image, imagePublicId: m.imagePublicId,
       pointsEn: m.pointsEn.length ? [...m.pointsEn] : ["", ""],
       pointsBn: m.pointsBn.length ? [...m.pointsBn] : ["", ""],
+      serviceId: m.serviceId ?? "",
       order: String(m.order), isActive: m.isActive,
     });
     setError(""); setModalOpen(true);
@@ -98,6 +118,7 @@ export default function StaffPage() {
         imagePublicId: form.imagePublicId || undefined,
         pointsEn: form.pointsEn.filter(Boolean),
         pointsBn: form.pointsBn.filter(Boolean),
+        serviceId: form.serviceId || null,
         order: Number(form.order), isActive: form.isActive,
       };
       if (editing) {
@@ -115,8 +136,6 @@ export default function StaffPage() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = (id: string) => setDeleteId(id);
-
   const confirmDelete = async () => {
     if (!deleteId) return;
     await api.delete(`/staff/${deleteId}`).catch(() => {});
@@ -125,27 +144,48 @@ export default function StaffPage() {
     toast.success("কর্মী সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
+  const filtered = filterServiceId === "__none__"
+    ? data.filter((m) => !m.serviceId)
+    : filterServiceId
+      ? data.filter((m) => m.serviceId === filterServiceId)
+      : data;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-slate-800">কর্মীবৃন্দ</h2>
-          <p className="text-sm text-slate-500">{data.length}জন কর্মী</p>
+          <p className="text-sm text-slate-500">{filtered.length}জন কর্মী</p>
         </div>
         <button onClick={openAdd} className="flex items-center gap-2 bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
           <Plus size={16} /> নতুন কর্মী
         </button>
       </div>
 
+      {/* Filter */}
+      <div className="mb-5">
+        <select
+          value={filterServiceId}
+          onChange={(e) => setFilterServiceId(e.target.value)}
+          className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300"
+        >
+          <option value="">সকল সার্ভিস</option>
+          {services.map((s) => (
+            <option key={s.id} value={s.id}>{s.nameBn}</option>
+          ))}
+          <option value="__none__">সার্ভিস নেই</option>
+        </select>
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
         </div>
-      ) : data.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400 text-sm">কোনো কর্মী নেই।</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {data.map((m) => (
+          {filtered.map((m) => (
             <div key={m.id} className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
               <div className="aspect-[4/3] bg-slate-100">
                 {m.image ? (
@@ -160,6 +200,7 @@ export default function StaffPage() {
               <div className="p-3">
                 <p className="font-semibold text-slate-800 text-sm truncate">{m.nameBn}</p>
                 {m.designationBn && <p className="text-xs text-slate-500 truncate">{m.designationBn}</p>}
+                {m.service && <p className="text-xs text-primary-600 truncate">{m.service.nameBn}</p>}
                 {m.pointsBn.length > 0 && (
                   <ul className="mt-1.5 space-y-0.5">
                     {m.pointsBn.slice(0, 2).map((p, i) => (
@@ -174,7 +215,7 @@ export default function StaffPage() {
                   <button onClick={() => openEdit(m)} className="flex-1 flex items-center justify-center gap-1 text-xs py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600">
                     <Pencil size={12} /> সম্পাদনা
                   </button>
-                  <button onClick={() => handleDelete(m.id)} className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 text-red-500">
+                  <button onClick={() => setDeleteId(m.id)} className="p-1.5 rounded-lg border border-red-100 hover:bg-red-50 text-red-500">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -199,6 +240,14 @@ export default function StaffPage() {
             <Field label="পদবি (ইংরেজি)"><input value={form.designationEn} onChange={(e) => set("designationEn", e.target.value)} className={inp} /></Field>
             <Field label="পদবি (বাংলা)"><input value={form.designationBn} onChange={(e) => set("designationBn", e.target.value)} className={inp} /></Field>
           </div>
+          <Field label="সার্ভিস">
+            <select value={form.serviceId} onChange={(e) => set("serviceId", e.target.value)} className={inp}>
+              <option value="">-- সার্ভিস নির্বাচন করুন --</option>
+              {services.map((s) => (
+                <option key={s.id} value={s.id}>{s.nameBn} ({s.nameEn})</option>
+              ))}
+            </select>
+          </Field>
 
           {/* Points EN */}
           <Field label="বুলেট পয়েন্ট (ইংরেজি)">
