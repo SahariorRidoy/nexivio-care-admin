@@ -136,14 +136,11 @@ export default function BookingReceipt({ booking, serviceName, onClose }: Props)
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                       <div style={{
-                        width: "40px", height: "40px", borderRadius: "50%",
-                        background: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.4)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: "48px", height: "48px", borderRadius: "8px",
+                        overflow: "hidden", border: "2px solid rgba(255,255,255,0.4)",
+                        background: "rgba(255,255,255,0.15)",
                       }}>
-                        <svg viewBox="0 0 40 40" width="22" height="22" fill="none">
-                          <path d="M20 4 C12 4 6 10 6 17 C6 28 20 36 20 36 C20 36 34 28 34 17 C34 10 28 4 20 4Z" fill="white" opacity="0.9"/>
-                          <path d="M17 18 L17 13 L23 13 L23 18 L28 18 L28 24 L23 24 L23 29 L17 29 L17 24 L12 24 L12 18 Z" fill="#2e7d32"/>
-                        </svg>
+                        <img src="/logo.jpeg" alt="Nexivio Care" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       </div>
                       <div>
                         <p style={{ color: "#fff", fontWeight: 800, fontSize: "18px", lineHeight: 1 }}>Nexivio Care</p>

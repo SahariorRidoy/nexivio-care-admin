@@ -193,9 +193,23 @@ export default function BookingsPage() {
     {
       key: "status", label: "অবস্থা",
       render: (r) => (
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusClass[r.status] ?? "bg-slate-100 text-slate-600"}`}>
-          {statusLabel[r.status] ?? r.status}
-        </span>
+        <select
+          value={r.status}
+          onChange={async (e) => {
+            const newStatus = e.target.value;
+            try {
+              await api.patch(`/bookings/${r.id}`, { status: newStatus });
+              setData((prev) => prev.map((b) => b.id === r.id ? { ...b, status: newStatus } : b));
+              if (viewBooking?.id === r.id) setViewBooking((v) => v ? { ...v, status: newStatus } : v);
+              toast.success("অবস্থা আপডেট হয়েছে!");
+            } catch {
+              toast.error("আপডেট ব্যর্থ হয়েছে");
+            }
+          }}
+          className={`text-xs font-semibold px-2.5 py-1 rounded-full border-0 cursor-pointer focus:ring-2 focus:ring-primary-300 ${statusClass[r.status] ?? "bg-slate-100 text-slate-600"}`}
+        >
+          {BOOKING_STATUSES.map((s) => <option key={s} value={s}>{statusLabel[s]}</option>)}
+        </select>
       ),
     },
     {
@@ -248,7 +262,7 @@ export default function BookingsPage() {
           onClose={() => setViewBooking(null)}
           onUpdate={handleBookingUpdate}
           onDelete={(id) => { setViewBooking(null); setDeleteId(id); }}
-          onOpenReceipt={(b) => setReceiptBooking(b)}
+          onOpenReceipt={(b) => { setViewBooking(null); setReceiptBooking(b); }}
         />
       )}
 
