@@ -68,6 +68,8 @@ export default function BookingsPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<Status | "all">("all");
   const [filterPayment, setFilterPayment] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
@@ -98,6 +100,9 @@ export default function BookingsPage() {
     return data.filter((b) => {
       const matchStatus = filterStatus === "all" || b.status === filterStatus;
       const matchPayment = filterPayment === "all" || (b.paymentStatus ?? "unpaid") === filterPayment;
+      const bDate = (b.date ?? "").slice(0, 10);
+      const matchDateFrom = !dateFrom || bDate >= dateFrom;
+      const matchDateTo = !dateTo || bDate <= dateTo;
       const matchSearch =
         !q ||
         b.name.toLowerCase().includes(q) ||
@@ -105,15 +110,15 @@ export default function BookingsPage() {
         (b.address ?? "").toLowerCase().includes(q) ||
         b.serviceType.toLowerCase().includes(q) ||
         (b.receiptNumber ?? "").toLowerCase().includes(q);
-      return matchStatus && matchPayment && matchSearch;
+      return matchStatus && matchPayment && matchDateFrom && matchDateTo && matchSearch;
     });
-  }, [data, search, filterStatus, filterPayment]);
+  }, [data, search, filterStatus, filterPayment, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  useEffect(() => setPage(1), [search, filterStatus, filterPayment]);
+  useEffect(() => setPage(1), [search, filterStatus, filterPayment, dateFrom, dateTo]);
 
   const handleBookingUpdate = (updated: Booking) => {
     setData((prev) => prev.map((b) => b.id === updated.id ? updated : b));
@@ -327,6 +332,28 @@ export default function BookingsPage() {
             <option value="failed">Failed</option>
           </select>
         </div>
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          className="py-2 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white text-slate-600"
+          title="তারিখ থেকে"
+        />
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          className="py-2 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white text-slate-600"
+          title="তারিখ পর্যন্ত"
+        />
+        {(dateFrom || dateTo) && (
+          <button
+            onClick={() => { setDateFrom(""); setDateTo(""); }}
+            className="px-3 py-2 text-xs font-medium text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap"
+          >
+            ✕ তারিখ মুছুন
+          </button>
+        )}
       </div>
 
       <AdminTable

@@ -21,6 +21,7 @@ interface Stats {
   activeServices: number;
   activeTraining: number;
   activeBanners: number;
+  totalNotices?: number;
   totalVehicleRegistrations?: number;
   pendingVehicleRegistrations?: number;
   totalTransportBookings?: number;
@@ -33,6 +34,7 @@ const defaultStats: Stats = {
   totalReviews: 0, pendingReviews: 0,
   totalContacts: 0, activeServices: 0,
   activeTraining: 0, activeBanners: 0,
+  totalNotices: 0,
   totalVehicleRegistrations: 0, pendingVehicleRegistrations: 0,
   totalTransportBookings: 0, pendingTransportBookings: 0,
 };
@@ -114,21 +116,20 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get<{ data: Stats }>("/admin/stats")
-      .then((r) => setStats(r.data))
-      .catch(() => {});
-    // Fetch transport stats separately
     Promise.all([
+      api.get<{ data: Stats }>("/admin/stats").catch(() => ({ data: defaultStats })),
       api.get<{ data: { id: string; status: string }[] }>("/vehicle-registrations").catch(() => ({ data: [] })),
       api.get<{ data: { id: string; status: string }[] }>("/transport-bookings").catch(() => ({ data: [] })),
-    ]).then(([vr, tb]) => {
-      setStats((prev) => ({
-        ...prev,
+      api.get<{ data: { id: string }[] }>("/notices").catch(() => ({ data: [] })),
+    ]).then(([s, vr, tb, notices]) => {
+      setStats({
+        ...s.data,
+        totalNotices: notices.data.length,
         totalVehicleRegistrations: vr.data.length,
         pendingVehicleRegistrations: vr.data.filter((r) => r.status === "pending").length,
         totalTransportBookings: tb.data.length,
         pendingTransportBookings: tb.data.filter((b) => b.status === "pending").length,
-      }));
+      });
     }).finally(() => setLoading(false));
   }, []);
 
@@ -220,7 +221,7 @@ export default function DashboardPage() {
               <StatCard title="সক্রিয় ব্যানার" value={stats.activeBanners} icon={Megaphone}
                 gradient="bg-gradient-to-br from-orange-500 to-red-500"
                 href="/dashboard/banners" />
-              <StatCard title="নোটিস" value="—" icon={Bell}
+              <StatCard title="নোটিস" value={stats.totalNotices ?? 0} icon={Bell}
                 gradient="bg-gradient-to-br from-navy-800 to-navy-950"
                 href="/dashboard/notices" />
             </>
