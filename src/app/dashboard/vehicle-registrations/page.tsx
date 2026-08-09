@@ -12,6 +12,7 @@ interface VehicleReg {
   id: string;
   ownerName: string;
   ownerPhone: string;
+  ownerNid?: string;
   ownerEmail?: string;
   ownerAddress?: string;
   vehicleType: string;
@@ -114,8 +115,15 @@ function DetailModal({ reg, onClose, onStatusChange, updating }: {
         </div>
 
         <div className="overflow-y-auto px-6 py-4 flex-1">
+          {reg.imageUrl && (
+            <div className="mb-4 rounded-xl overflow-hidden border border-slate-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={reg.imageUrl} alt="Vehicle" className="w-full h-48 object-cover" />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 text-sm">
             {[
+              { label: "Owner NID",        value: reg.ownerNid },
               { label: "Owner Email",      value: reg.ownerEmail },
               { label: "Owner Address",    value: reg.ownerAddress },
               { label: "Brand",            value: reg.vehicleBrand },
