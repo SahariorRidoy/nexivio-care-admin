@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef } from "react";
-import { X, Download, Printer } from "lucide-react";
+import { useRef, useState } from "react";
+import { X, Download, Printer, Share2, MessageCircle, Mail, Copy, Check } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export interface ReceiptBooking {
   id: string;
@@ -59,36 +61,114 @@ function formatTimeEn(t: string) {
 
 export default function BookingReceipt({ booking, serviceName, onClose }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
+  const rcptNo = booking.receiptNumber ?? `RCP-${booking.id.slice(0, 8).toUpperCase()}`;
 
-  const handlePrint = () => {
-    const content = printRef.current;
-    if (!content) return;
-    const win = window.open("", "_blank", "width=800,height=900");
-    if (!win) return;
-    win.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8"/>
-        <title>Receipt - ${booking.receiptNumber ?? booking.id.slice(0, 8)}</title>
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; }
-          @media print {
-            @page { margin: 0; size: A4; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          }
-        </style>
-      </head>
-      <body>${content.innerHTML}</body>
-      </html>
-    `);
-    win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); win.close(); }, 400);
+  const handleDownload = async () => {
+    const blob = await getPdfBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `Receipt-${rcptNo}.pdf`; a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const rcptNo = booking.receiptNumber ?? `RCP-${booking.id.slice(0, 8).toUpperCase()}`;
+  const handlePrint = async () => {
+    const canvas = await getCanvas();
+    if (!canvas) return;
+    const imgData = canvas.toDataURL("image/png");
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;border:0;visibility:hidden;";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
+    if (!doc) return;
+
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Receipt - ${rcptNo}</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{background:#fff;}img{width:100%;display:block;}@media print{@page{margin:0;size:A4;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><img src="${imgData}"/></body></html>`);
+    doc.close();
+
+    iframe.onload = () => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    };
+  };
+
+  const [showShare, setShowShare] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const getCanvas = async () => {
+    const content = printRef.current;
+    if (!content) return null;
+    return html2canvas(content, { scale: 2, useCORS: true });
+  };
+
+  const getPdfBlob = async (): Promise<Blob | null> => {
+    const canvas = await getCanvas();
+    if (!canvas) return null;
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width / 2, canvas.height / 2] });
+    pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2);
+    return pdf.output("blob");
+  };
+
+  const handleShareWhatsApp = async () => {
+    const blob = await getPdfBlob();
+    if (!blob) return;
+    const file = new File([blob], `Receipt-${rcptNo}.pdf`, { type: "application/pdf" });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: `Receipt ${rcptNo}` });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `Receipt-${rcptNo}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+      window.open(`https://web.whatsapp.com/`, "_blank");
+    }
+    setShowShare(false);
+  };
+
+  const handleShareEmail = async () => {
+    const blob = await getPdfBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `Receipt-${rcptNo}.pdf`; a.click();
+    URL.revokeObjectURL(url);
+    const subject = `Receipt ${rcptNo} - Nexivio Care`;
+    const body = `Dear ${booking.name},\n\nPlease find your receipt (downloaded) attached.\n\nThank you for choosing Nexivio Care.`;
+    setTimeout(() => window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, "_self"), 300);
+    setShowShare(false);
+  };
+
+  const handleCopyPdf = async () => {
+    const blob = await getPdfBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `Receipt-${rcptNo}.pdf`; a.click();
+    URL.revokeObjectURL(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    setShowShare(false);
+  };
+
+  const handleNativeShare = async () => {
+    const blob = await getPdfBlob();
+    if (!blob) return;
+    const file = new File([blob], `Receipt-${rcptNo}.pdf`, { type: "application/pdf" });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: `Receipt ${rcptNo}`, text: `Nexivio Care Receipt - ${booking.name}` });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `Receipt-${rcptNo}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+    }
+    setShowShare(false);
+  };
+
   const issuedDate = formatDateEn(booking.createdAt);
   const pStatus = booking.paymentStatus ?? "unpaid";
   const bStatus = booking.status ?? "pending";
@@ -109,11 +189,39 @@ export default function BookingReceipt({ booking, serviceName, onClose }: Props)
               <Printer size={13} /> Print
             </button>
             <button
-              onClick={handlePrint}
+              onClick={handleDownload}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               <Download size={13} /> Download PDF
             </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowShare((v) => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                <Share2 size={13} /> Share
+              </button>
+              {showShare && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowShare(false)} />
+                  <div className="absolute right-0 top-9 z-20 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 overflow-hidden">
+                    <button onClick={handleShareWhatsApp} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                      <MessageCircle size={14} className="text-green-500" /> WhatsApp
+                    </button>
+                    <button onClick={handleShareEmail} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                      <Mail size={14} className="text-blue-500" /> Email
+                    </button>
+                    <button onClick={handleCopyPdf} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                      {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} className="text-slate-400" />}
+                      {copied ? "Saved!" : "Save PDF"}
+                    </button>
+                    <button onClick={handleNativeShare} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                      <Share2 size={14} className="text-purple-500" /> Share via...
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             <button onClick={onClose} className="p-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors">
               <X size={15} />
             </button>
