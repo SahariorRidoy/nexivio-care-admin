@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Search, Filter, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
-import { formatDate, assetUrl } from "@/lib/utils";
+import { formatDate, assetUrl, downloadFile } from "@/lib/utils";
 import AdminTable, { type Column } from "@/components/ui/AdminTable";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
@@ -175,14 +175,12 @@ export default function ApplicationsPage() {
       label: "সিভি",
       render: (r) =>
         r.cvUrl ? (
-          <a
-            href={assetUrl(r.cvUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => downloadFile(assetUrl(r.cvUrl!), `cv-${r.name.replace(/\s+/g, "-")}.pdf`)}
             className="text-primary-600 hover:underline text-xs font-medium"
           >
             ডাউনলোড
-          </a>
+          </button>
         ) : (
           <span className="text-slate-400">—</span>
         ),

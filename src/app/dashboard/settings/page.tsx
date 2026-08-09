@@ -7,6 +7,7 @@ import ImageUpload from "@/components/ui/ImageUpload";
 
 interface Settings {
   phone: string | null;
+  phone2: string | null;
   whatsapp: string | null;
   email: string | null;
   address: string | null;
@@ -31,7 +32,7 @@ interface Settings {
 }
 
 const empty: Settings = {
-  phone: "", whatsapp: "", email: "", address: "", businessHours: "",
+  phone: "", phone2: "", whatsapp: "", email: "", address: "", businessHours: "",
   mapEmbedUrl: "", facebookUrl: "", youtubeUrl: "", linkedinUrl: "",
   instagramUrl: "", messengerUrl: "", logoUrl: null, logoPublicId: null,
   qrImageUrl: null, qrPublicId: null,
@@ -89,8 +90,11 @@ export default function SettingsPage() {
         {/* Contact Info */}
         <Section title="যোগাযোগ তথ্য">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="ফোন নম্বর">
+            <Field label="ফোন নম্বর ১">
               <input value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} className={inp} placeholder="01700-000000" />
+            </Field>
+            <Field label="ফোন নম্বর ২">
+              <input value={form.phone2 ?? ""} onChange={(e) => set("phone2", e.target.value)} className={inp} placeholder="01800-000000" />
             </Field>
             <Field label="WhatsApp নম্বর">
               <input value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} className={inp} placeholder="01700000000" />
