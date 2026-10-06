@@ -78,7 +78,7 @@ function Pagination({
             <span key={`ellipsis-${i}`} className="px-2 text-slate-400 text-sm select-none">…</span>
           ) : (
             <button key={p} onClick={() => onChange(p as number)}
-              className={`min-w-[34px] h-[34px] rounded-lg border text-sm font-medium transition-colors ${
+              className={`min-w-8.5 h-8.5 rounded-lg border text-sm font-medium transition-colors ${
                 p === page ? "bg-primary-600 text-white border-primary-600 shadow-sm" : "border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}>
               {p}
