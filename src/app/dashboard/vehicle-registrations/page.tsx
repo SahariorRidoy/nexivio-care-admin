@@ -73,7 +73,7 @@ function DetailModal({ reg, onClose, onStatusChange, updating }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div className="bg-gradient-to-br from-primary-600 to-primary-400 px-6 pt-5 pb-8 shrink-0">
+        <div className="bg-linear-to-br from-primary-600 to-primary-400 px-6 pt-5 pb-8 shrink-0">
           <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white">
             <X size={16} />
           </button>

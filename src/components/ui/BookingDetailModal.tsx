@@ -119,7 +119,7 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
       <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[94vh] overflow-hidden">
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-800 px-6 pt-5 pb-10 shrink-0 relative">
+        <div className="bg-linear-to-br from-primary-600 to-primary-800 px-6 pt-5 pb-10 shrink-0 relative">
           <button onClick={onClose} className="absolute cursor-pointer top-4 right-4 p-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors">
             <X size={16} />
           </button>
