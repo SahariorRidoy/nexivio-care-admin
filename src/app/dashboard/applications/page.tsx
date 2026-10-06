@@ -15,6 +15,7 @@ interface Application {
   experience?: string;
   education?: string;
   cvUrl?: string;
+  nidUrl?: string;
   status: string;
   createdAt: string;
 }
@@ -181,6 +182,23 @@ export default function ApplicationsPage() {
           >
             ডাউনলোড
           </button>
+        ) : (
+          <span className="text-slate-400">—</span>
+        ),
+    },
+    {
+      key: "nidUrl",
+      label: "NID",
+      render: (r) =>
+        r.nidUrl ? (
+          <a
+            href={r.nidUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary-600 hover:underline text-xs font-medium"
+          >
+            দেখুন
+          </a>
         ) : (
           <span className="text-slate-400">—</span>
         ),

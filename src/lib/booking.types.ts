@@ -7,6 +7,7 @@ export interface Booking {
   patientName?: string | null;
   patientGender?: string | null;
   relationship?: string | null;
+  patientCondition?: string | null;
   serviceType: string;
   packageName?: string | null;
   pricingPeriod?: "daily" | "weekly" | "monthly" | null;

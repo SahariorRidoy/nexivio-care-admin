@@ -13,6 +13,7 @@ interface VehicleReg {
   ownerName: string;
   ownerPhone: string;
   ownerNid?: string;
+  ownerNidImageUrl?: string;
   ownerEmail?: string;
   ownerAddress?: string;
   vehicleType: string;
@@ -121,9 +122,17 @@ function DetailModal({ reg, onClose, onStatusChange, updating }: {
               <img src={reg.imageUrl} alt="Vehicle" className="w-full h-48 object-cover" />
             </div>
           )}
+          {reg.ownerNidImageUrl && (
+            <div className="mb-4">
+              <p className="text-[11px] text-slate-400 uppercase tracking-wide mb-1.5">NID Card Image</p>
+              <div className="rounded-xl overflow-hidden border border-amber-200">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={reg.ownerNidImageUrl} alt="Owner NID" className="w-full h-40 object-cover" />
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 text-sm">
             {[
-              { label: "Owner NID",        value: reg.ownerNid },
               { label: "Owner Email",      value: reg.ownerEmail },
               { label: "Owner Address",    value: reg.ownerAddress },
               { label: "Brand",            value: reg.vehicleBrand },

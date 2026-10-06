@@ -22,6 +22,8 @@ interface Settings {
   logoPublicId: string | null;
   qrImageUrl: string | null;
   qrPublicId: string | null;
+  visitingCardUrl: string | null;
+  visitingCardPublicId: string | null;
   bkashBaseUrl: string | null;
   bkashAppKey: string | null;
   bkashAppSecret: string | null;
@@ -36,6 +38,7 @@ const empty: Settings = {
   mapEmbedUrl: "", facebookUrl: "", youtubeUrl: "", linkedinUrl: "",
   instagramUrl: "", messengerUrl: "", logoUrl: null, logoPublicId: null,
   qrImageUrl: null, qrPublicId: null,
+  visitingCardUrl: null, visitingCardPublicId: null,
   bkashBaseUrl: "https://tokenized.sandbox.bka.sh/v1.2.0-beta",
   bkashAppKey: "", bkashAppSecret: "", bkashUsername: "", bkashPassword: "",
   smsApiKey: "", smsSenderId: "",
@@ -153,6 +156,29 @@ export default function SettingsPage() {
               />
             </Field>
           </div>
+        </Section>
+
+        {/* Visiting Card */}
+        <Section title="ভিজিটিং কার্ড">
+          <p className="text-xs text-slate-500">এখানে আপলোড করা ছবি ফ্রন্টেন্ডের Contact পেজ থেকে গ্রাহকরা ডাউনলোড করতে পারবেন।</p>
+          <Field label="ভিজিটিং কার্ড (Image)">
+            <ImageUpload
+              value={form.visitingCardUrl ?? undefined}
+              onChange={(url, publicId) => { set("visitingCardUrl", url); set("visitingCardPublicId", publicId); }}
+              onClear={() => { set("visitingCardUrl", null); set("visitingCardPublicId", null); }}
+              label="ভিজিটিং কার্ড আপলোড করুন"
+            />
+          </Field>
+          {form.visitingCardUrl && (
+            <a
+              href={form.visitingCardUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-xs text-primary-600 hover:underline font-medium"
+            >
+              🪪 বর্তমান কার্ড দেখুন
+            </a>
+          )}
         </Section>
 
         {/* bKash Payment Gateway */}

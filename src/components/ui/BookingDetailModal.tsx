@@ -55,6 +55,7 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
     date: booking.date ?? "",
     time: booking.time ?? "",
     notes: booking.notes ?? "",
+    patientCondition: booking.patientCondition ?? "",
     note: "",
   });
 
@@ -75,6 +76,7 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
       date: booking.date ?? "",
       time: booking.time ?? "",
       notes: booking.notes ?? "",
+      patientCondition: booking.patientCondition ?? "",
       note: "",
     });
   }, [booking]);
@@ -91,6 +93,7 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
         date: form.date || undefined,
         time: form.time || undefined,
         notes: form.notes || undefined,
+        patientCondition: form.patientCondition || undefined,
         changedBy: user?.name ?? user?.email ?? "Admin",
         note: form.note || undefined,
       };
@@ -164,7 +167,7 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
           {/* Booker + Patient */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">বুকারের তথ্য</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">বুকিংকারীর তথ্য</p>
               <div className="space-y-1.5">
                 <p className="text-sm font-semibold text-slate-800">{booking.name}</p>
                 <div className="flex items-center gap-1.5">
@@ -175,13 +178,41 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
                 {booking.address && <p className="text-xs text-slate-400 flex items-center gap-1"><MapPin size={10} />{booking.address}</p>}
               </div>
             </div>
-            {(booking.patientName || booking.patientGender || booking.relationship) && (
+            {(booking.patientName || booking.patientGender || booking.relationship || booking.patientCondition) && (
               <div className="border-l border-slate-100 pl-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">রোগীর তথ্য</p>
-                <div className="space-y-1.5">
-                  {booking.patientName && <p className="text-sm font-semibold text-slate-800">{booking.patientName}</p>}
-                  {booking.patientGender && <p className="text-xs text-slate-500">{booking.patientGender}</p>}
-                  {booking.relationship && <p className="text-xs text-slate-400">সম্পর্ক: {booking.relationship}</p>}
+                <div className="space-y-2">
+                  {booking.patientName && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs text-slate-400 w-28 shrink-0">রোগীর নাম</span>
+                      <span className="text-xs font-semibold text-slate-700">{booking.patientName}</span>
+                    </div>
+                  )}
+                  {booking.patientGender && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs text-slate-400 w-28 shrink-0">রোগীর লিঙ্গ</span>
+                      <span className="text-xs font-semibold text-slate-700">{booking.patientGender}</span>
+                    </div>
+                  )}
+                  {booking.relationship && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs text-slate-400 w-28 shrink-0">সাথে সম্পর্ক</span>
+                      <span className="text-xs font-semibold text-slate-700">{booking.relationship}</span>
+                    </div>
+                  )}
+                  {editMode ? (
+                    <div>
+                      <p className="text-xs text-slate-400 mb-0.5">বর্তমান অবস্থা</p>
+                      <textarea value={form.patientCondition} onChange={(e) => setForm((f) => ({ ...f, patientCondition: e.target.value }))}
+                        rows={2} placeholder="যেমন: ডায়াবেটিস, হার্টের সমস্যা..."
+                        className="text-sm border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-300 w-full resize-none" />
+                    </div>
+                  ) : booking.patientCondition ? (
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs text-slate-400 w-28 shrink-0">বর্তমান অবস্থা</span>
+                      <span className="text-xs font-semibold text-slate-700">{booking.patientCondition}</span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             )}

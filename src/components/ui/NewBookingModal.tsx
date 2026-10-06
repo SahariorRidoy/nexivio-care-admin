@@ -19,7 +19,7 @@ interface Props {
 
 const empty = {
   name: "", phone: "", address: "",
-  patientName: "", patientGender: "", relationship: "",
+  patientName: "", patientGender: "", relationship: "", patientCondition: "",
   serviceType: "", packageName: "", pricingPeriod: "" as string,
   date: "", time: "",
   paymentMethod: "", amount: "", paymentStatus: "unpaid", transactionId: "",
@@ -48,6 +48,7 @@ export default function NewBookingModal({ services, onClose, onCreate }: Props) 
         patientName: form.patientName || undefined,
         patientGender: form.patientGender || undefined,
         relationship: form.relationship || undefined,
+        patientCondition: form.patientCondition || undefined,
         serviceType: form.serviceType,
         packageName: form.packageName || undefined,
         pricingPeriod: (form.pricingPeriod as "daily" | "weekly" | "monthly") || undefined,
@@ -137,6 +138,11 @@ export default function NewBookingModal({ services, onClose, onCreate }: Props) 
                 <input value={form.relationship} onChange={set("relationship")} placeholder="যেমন: বাবা, মা"
                   className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300" />
               </div>
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 font-medium mb-1 block">রোগীর বর্তমান অবস্থা</label>
+              <textarea value={form.patientCondition} onChange={set("patientCondition")} rows={2} placeholder="যেমন: ডায়াবেটিস, হার্টের সমস্যা, পারালাইসিস..."
+                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300 resize-none" />
             </div>
           </section>
 
