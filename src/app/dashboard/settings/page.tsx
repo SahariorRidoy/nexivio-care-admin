@@ -144,15 +144,29 @@ export default function SettingsPage() {
             <Field label="লোগো">
               <ImageUpload
                 value={form.logoUrl ?? undefined}
-                onChange={(url, publicId) => { set("logoUrl", url); set("logoPublicId", publicId); }}
-                onClear={() => { set("logoUrl", null); set("logoPublicId", null); }}
+                onChange={async (url, publicId) => {
+                  set("logoUrl", url); set("logoPublicId", publicId);
+                  await api.patch("/settings", { ...form, logoUrl: url, logoPublicId: publicId });
+                  toast.success("লোগো সংরক্ষিত হয়েছে!");
+                }}
+                onClear={async () => {
+                  set("logoUrl", null); set("logoPublicId", null);
+                  await api.patch("/settings", { ...form, logoUrl: null, logoPublicId: null });
+                }}
               />
             </Field>
             <Field label="QR কোড">
               <ImageUpload
                 value={form.qrImageUrl ?? undefined}
-                onChange={(url, publicId) => { set("qrImageUrl", url); set("qrPublicId", publicId); }}
-                onClear={() => { set("qrImageUrl", null); set("qrPublicId", null); }}
+                onChange={async (url, publicId) => {
+                  set("qrImageUrl", url); set("qrPublicId", publicId);
+                  await api.patch("/settings", { ...form, qrImageUrl: url, qrPublicId: publicId });
+                  toast.success("QR কোড সংরক্ষিত হয়েছে!");
+                }}
+                onClear={async () => {
+                  set("qrImageUrl", null); set("qrPublicId", null);
+                  await api.patch("/settings", { ...form, qrImageUrl: null, qrPublicId: null });
+                }}
               />
             </Field>
           </div>
@@ -164,8 +178,15 @@ export default function SettingsPage() {
           <Field label="ভিজিটিং কার্ড (Image)">
             <ImageUpload
               value={form.visitingCardUrl ?? undefined}
-              onChange={(url, publicId) => { set("visitingCardUrl", url); set("visitingCardPublicId", publicId); }}
-              onClear={() => { set("visitingCardUrl", null); set("visitingCardPublicId", null); }}
+              onChange={async (url, publicId) => {
+                set("visitingCardUrl", url); set("visitingCardPublicId", publicId);
+                await api.patch("/settings", { ...form, visitingCardUrl: url, visitingCardPublicId: publicId });
+                toast.success("ভিজিটিং কার্ড সংরক্ষিত হয়েছে!");
+              }}
+              onClear={async () => {
+                set("visitingCardUrl", null); set("visitingCardPublicId", null);
+                await api.patch("/settings", { ...form, visitingCardUrl: null, visitingCardPublicId: null });
+              }}
               label="ভিজিটিং কার্ড আপলোড করুন"
             />
           </Field>

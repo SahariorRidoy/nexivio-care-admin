@@ -142,8 +142,6 @@ function DetailModal({ reg, onClose, onStatusChange, updating }: {
               { label: "Seating Capacity", value: reg.seatingCapacity },
               { label: "AC Available",     value: reg.acAvailable ? "Yes" : "No" },
               { label: "Driver Included",  value: reg.driverIncluded ? "Yes" : "No" },
-              { label: "Daily Rate",       value: reg.dailyRate ? `৳${reg.dailyRate}` : undefined },
-              { label: "Per KM Rate",      value: reg.perKmRate ? `৳${reg.perKmRate}` : undefined },
               { label: "Registered On",    value: formatDate(reg.createdAt) },
             ].filter(f => f.value !== undefined && f.value !== null && f.value !== "").map(({ label, value }) => (
               <div key={label} className="bg-slate-50 rounded-xl p-3">
@@ -235,14 +233,6 @@ export default function VehicleRegistrationsPage() {
           <div className="text-slate-700">{VEHICLE_LABELS[r.vehicleType] ?? r.vehicleType}</div>
           {r.vehicleBrand && <div className="text-xs text-slate-400">{r.vehicleBrand} {r.vehicleModel}</div>}
         </div>
-      ),
-    },
-    {
-      key: "dailyRate", label: "Rate",
-      render: (r) => (
-        <span className="text-slate-600 text-sm">
-          {r.dailyRate ? `৳${r.dailyRate}/day` : r.perKmRate ? `৳${r.perKmRate}/km` : "—"}
-        </span>
       ),
     },
     {
