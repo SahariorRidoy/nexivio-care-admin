@@ -11,6 +11,7 @@ import { formatDate, formatDateTime, formatTime } from "@/lib/utils";
 import AdminTable, { type Column } from "@/components/ui/AdminTable";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import BookingReceipt, { type ReceiptBooking } from "@/components/ui/BookingReceipt";
+import BookingInvoice from "@/components/ui/BookingInvoice";
 import BookingDetailModal from "@/components/ui/BookingDetailModal";
 import NewBookingModal from "@/components/ui/NewBookingModal";
 import {
@@ -74,6 +75,7 @@ export default function BookingsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [viewBooking, setViewBooking] = useState<Booking | null>(null);
   const [receiptBooking, setReceiptBooking] = useState<Booking | null>(null);
+  const [invoiceBooking, setInvoiceBooking] = useState<Booking | null>(null);
   const [showNewBooking, setShowNewBooking] = useState(false);
 
   useEffect(() => {
@@ -150,6 +152,15 @@ export default function BookingsPage() {
       ),
     },
     {
+      key: "createdAt", label: "বুকিং তারিখ",
+      render: (r) => (
+        <div className="text-xs">
+          <div className="text-slate-500">{formatDate(r.createdAt)}</div>
+          <div className="text-slate-400">{formatTime(r.createdAt)}</div>
+        </div>
+      ),
+    },
+    {
       key: "name", label: "নাম / ফোন",
       render: (r) => (
         <div>
@@ -168,12 +179,12 @@ export default function BookingsPage() {
       ),
     },
     {
-      key: "date", label: "তারিখ",
+      key: "date", label: "সেবার তারিখ",
       render: (r) => (
-        <span className="text-slate-600 text-xs">
-          {r.date ? formatDate(r.date) : "—"}
-          {r.time ? <span className="text-slate-400"> · {formatTime(r.time)}</span> : null}
-        </span>
+        <div className="text-xs">
+          <div className="font-semibold text-primary-600">{r.date ? formatDate(r.date) : "—"}</div>
+          {r.time && <div className="text-primary-400">{formatTime(r.time)}</div>}
+        </div>
       ),
     },
     {
@@ -218,10 +229,6 @@ export default function BookingsPage() {
       ),
     },
     {
-      key: "createdAt", label: "জমার তারিখ",
-      render: (r) => <span className="text-slate-500 text-xs">{formatDateTime(r.createdAt)}</span>,
-    },
-    {
       key: "_actions", label: "",
       render: (r) => (
         <div className="flex items-center gap-1.5">
@@ -231,6 +238,13 @@ export default function BookingsPage() {
             title="রিসিট দেখুন"
           >
             <Receipt size={12} /> Receipt
+          </button>
+          <button
+            onClick={() => setInvoiceBooking(r)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors whitespace-nowrap"
+            title="ইনভয়েস দেখুন"
+          >
+            <Receipt size={12} /> Invoice
           </button>
           <button
             onClick={() => setViewBooking(r)}
@@ -260,6 +274,14 @@ export default function BookingsPage() {
         />
       )}
 
+      {invoiceBooking && (
+        <BookingInvoice
+          booking={invoiceBooking as ReceiptBooking}
+          serviceName={services[invoiceBooking.serviceType] ?? invoiceBooking.serviceType}
+          onClose={() => setInvoiceBooking(null)}
+        />
+      )}
+
       {viewBooking && (
         <BookingDetailModal
           booking={viewBooking}
@@ -268,6 +290,7 @@ export default function BookingsPage() {
           onUpdate={handleBookingUpdate}
           onDelete={(id) => { setViewBooking(null); setDeleteId(id); }}
           onOpenReceipt={(b) => { setViewBooking(null); setReceiptBooking(b); }}
+          onOpenInvoice={(b) => { setViewBooking(null); setInvoiceBooking(b); }}
         />
       )}
 

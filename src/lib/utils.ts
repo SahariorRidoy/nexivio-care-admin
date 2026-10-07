@@ -39,6 +39,28 @@ export function assetUrl(path?: string | null): string {
   return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
+const ones = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine",
+  "Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+const tens = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+
+function chunk(n: number): string {
+  if (n === 0) return "";
+  if (n < 20) return ones[n] + " ";
+  if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "") + " ";
+  return ones[Math.floor(n / 100)] + " Hundred " + chunk(n % 100);
+}
+
+export function numberToWords(n: number): string {
+  if (n === 0) return "Zero Taka Only";
+  const int = Math.floor(Math.abs(n));
+  let result = "";
+  if (int >= 10000000) { result += chunk(Math.floor(int / 10000000)) + "Crore "; }
+  if (int >= 100000)   { result += chunk(Math.floor((int % 10000000) / 100000)) + "Lakh "; }
+  if (int >= 1000)     { result += chunk(Math.floor((int % 100000) / 1000)) + "Thousand "; }
+  result += chunk(int % 1000);
+  return result.trim() + " Taka Only";
+}
+
 export async function downloadFile(url: string, filename: string): Promise<void> {
   try {
     const res = await fetch(url);

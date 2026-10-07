@@ -44,9 +44,10 @@ interface Props {
   onUpdate: (updated: Booking) => void;
   onDelete: (id: string) => void;
   onOpenReceipt: (b: Booking) => void;
+  onOpenInvoice: (b: Booking) => void;
 }
 
-export default function BookingDetailModal({ booking, services, onClose, onUpdate, onDelete, onOpenReceipt }: Props) {
+export default function BookingDetailModal({ booking, services, onClose, onUpdate, onDelete, onOpenReceipt, onOpenInvoice }: Props) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -155,7 +156,13 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
                 onClick={() => onOpenReceipt(booking)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
               >
-                <Receipt size={13} /> View Receipt
+                <Receipt size={13} /> Receipt
+              </button>
+              <button
+                onClick={() => onOpenInvoice(booking)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              >
+                <Receipt size={13} /> Invoice
               </button>
               <button
                 onClick={() => setEditMode((v) => !v)}
@@ -246,7 +253,11 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
                 <div>
                   <p className="text-xs text-slate-400 mb-0.5">সেবার দিন</p>
                   <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-orange-100 text-orange-700">
-                    {booking.serviceDays} {booking.serviceDays === 1 ? "day" : "days"}
+                    {booking.pricingPeriod === "weekly"
+                      ? `${Math.ceil(booking.serviceDays / 7)} Week${Math.ceil(booking.serviceDays / 7) !== 1 ? "s" : ""}`
+                      : booking.pricingPeriod === "monthly"
+                      ? `${Math.ceil(booking.serviceDays / 30)} Month${Math.ceil(booking.serviceDays / 30) !== 1 ? "s" : ""}`
+                      : `${booking.serviceDays} Day${booking.serviceDays !== 1 ? "s" : ""}`}
                   </span>
                 </div>
               )}
