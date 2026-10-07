@@ -15,6 +15,12 @@ const STATUSES = ["pending", "confirmed", "completed", "cancelled"] as const;
 const PAYMENT_STATUSES = ["unpaid", "pending", "paid", "failed"] as const;
 const PAYMENT_METHODS = ["bKash", "Nagad", "Rocket", "Cash", "Bank Transfer", "Card", "Other"];
 
+const dutyTypeLabel: Record<string, string> = {
+  "day":     "Day Duty",
+  "night":   "Night Duty",
+  "live-in": "Live In",
+};
+
 const pricingPeriodLabel: Record<string, { label: string; color: string }> = {
   daily:   { label: "Daily",   color: "bg-sky-100 text-sky-700" },
   weekly:  { label: "Weekly",  color: "bg-violet-100 text-violet-700" },
@@ -228,6 +234,22 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
                 <p className="text-xs text-slate-400 mb-0.5">সেবার ধরন</p>
                 <p className="text-sm font-bold text-primary-600">{serviceName}</p>
               </div>
+              {booking.dutyType && (
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">ডিউটির ধরন</p>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700">
+                    {dutyTypeLabel[booking.dutyType] ?? booking.dutyType}
+                  </span>
+                </div>
+              )}
+              {booking.serviceDays && (
+                <div>
+                  <p className="text-xs text-slate-400 mb-0.5">সেবার দিন</p>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-orange-100 text-orange-700">
+                    {booking.serviceDays} {booking.serviceDays === 1 ? "day" : "days"}
+                  </span>
+                </div>
+              )}
               {booking.packageName && (
                 <div>
                   <p className="text-xs text-slate-400 mb-0.5">প্যাকেজ</p>

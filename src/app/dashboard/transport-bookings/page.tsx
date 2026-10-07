@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Search, Filter, Eye, X, MapPin, Calendar, Clock, Users } from "lucide-react";
+import { Search, Filter, Eye, X, MapPin, Calendar, Clock, Users, Copy, CheckCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
@@ -67,6 +67,24 @@ const CATEGORY_LABELS: Record<string, string> = {
   "vehicle-rental":       "🚖 Vehicle Rental",
 };
 
+function CopyBtn({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      className="ml-1.5 p-1 rounded bg-white/25 hover:bg-white/40 text-white transition-colors"
+    >
+      {copied ? <CheckCheck size={13} /> : <Copy size={13} />}
+    </button>
+  );
+}
+
+function to12h(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
 function DetailModal({ booking, onClose, onStatusChange, updating }: {
   booking: TransportBooking;
   onClose: () => void;
@@ -93,8 +111,11 @@ function DetailModal({ booking, onClose, onStatusChange, updating }: {
             </div>
             <div>
               <h3 className="text-lg font-bold text-white">{booking.passengerName}</h3>
-              <p className="text-primary-100 text-sm">{booking.passengerPhone}</p>
-              <p className="text-primary-200 text-xs mt-0.5">{VEHICLE_LABELS[booking.vehicleType] ?? booking.vehicleType}</p>
+              <div className="flex items-center mt-0.5">
+                <span className="text-xl font-extrabold text-white">{booking.passengerPhone}</span>
+                <CopyBtn text={booking.passengerPhone} />
+              </div>
+              <p className="text-base font-bold text-white mt-0.5">{VEHICLE_LABELS[booking.vehicleType] ?? booking.vehicleType}</p>
             </div>
           </div>
         </div>
@@ -119,7 +140,7 @@ function DetailModal({ booking, onClose, onStatusChange, updating }: {
               { label: "Pickup",          value: booking.pickupAddress, icon: <MapPin size={13} /> },
               { label: "Drop",            value: booking.dropAddress,   icon: <MapPin size={13} /> },
               { label: "Date",            value: formatDate(booking.scheduledDate), icon: <Calendar size={13} /> },
-              { label: "Time",            value: booking.scheduledTime, icon: <Clock size={13} /> },
+              { label: "Time",            value: to12h(booking.scheduledTime), icon: <Clock size={13} /> },
               { label: "Trip Type",       value: booking.tripType },
               { label: "Service Category", value: booking.serviceCategory ? (CATEGORY_LABELS[booking.serviceCategory] ?? booking.serviceCategory) : undefined },
               { label: "Passengers",      value: booking.passengerCount, icon: <Users size={13} /> },
@@ -233,11 +254,18 @@ export default function TransportBookingsPage() {
       ),
     },
     {
-      key: "pickupAddress", label: "Route",
+      key: "pickupAddress", label: "From",
       render: (r) => (
-        <div className="text-xs text-slate-600 max-w-[160px]">
-          <div className="truncate">📍 {r.pickupAddress}</div>
-          <div className="truncate text-slate-400">→ {r.dropAddress}</div>
+        <div className="text-xs text-slate-600 min-w-[140px] max-w-[200px] flex gap-1">
+          <span className="shrink-0">📍</span><span className="leading-snug">{r.pickupAddress}</span>
+        </div>
+      ),
+    },
+    {
+      key: "dropAddress", label: "To",
+      render: (r) => (
+        <div className="text-xs text-slate-600 min-w-[140px] max-w-[200px] flex gap-1">
+          <MapPin size={13} className="shrink-0 mt-0.5 text-green-500" /><span className="leading-snug">{r.dropAddress}</span>
         </div>
       ),
     },
@@ -246,7 +274,7 @@ export default function TransportBookingsPage() {
       render: (r) => (
         <span className="text-slate-600 text-sm">
           {formatDate(r.scheduledDate)}
-          <span className="text-slate-400 text-xs"> · {r.scheduledTime}</span>
+          <span className="text-slate-400 text-xs"> · {to12h(r.scheduledTime)}</span>
         </span>
       ),
     },

@@ -7,6 +7,11 @@ import { api } from "@/lib/api";
 import type { Booking } from "@/lib/booking.types";
 
 const PAYMENT_METHODS = ["bKash", "Nagad", "Rocket", "Cash", "Bank Transfer", "Card", "Other"];
+const DUTY_TYPES = [
+  { value: "day",     label: "Day Duty" },
+  { value: "night",   label: "Night Duty" },
+  { value: "live-in", label: "Live In" },
+] as const;
 const PRICING_PERIODS = ["daily", "weekly", "monthly"] as const;
 const PAYMENT_STATUSES = ["unpaid", "pending", "paid", "failed"] as const;
 const STATUSES = ["pending", "confirmed", "completed", "cancelled"] as const;
@@ -20,7 +25,7 @@ interface Props {
 const empty = {
   name: "", phone: "", address: "",
   patientName: "", patientGender: "", relationship: "", patientCondition: "",
-  serviceType: "", packageName: "", pricingPeriod: "" as string,
+  serviceType: "", dutyType: "", serviceDays: "", packageName: "", pricingPeriod: "" as string,
   date: "", time: "",
   paymentMethod: "", amount: "", paymentStatus: "unpaid", transactionId: "",
   status: "pending", notes: "",
@@ -50,6 +55,8 @@ export default function NewBookingModal({ services, onClose, onCreate }: Props) 
         relationship: form.relationship || undefined,
         patientCondition: form.patientCondition || undefined,
         serviceType: form.serviceType,
+        dutyType: form.dutyType || undefined,
+        serviceDays: form.serviceDays ? parseInt(form.serviceDays) : undefined,
         packageName: form.packageName || undefined,
         pricingPeriod: (form.pricingPeriod as "daily" | "weekly" | "monthly") || undefined,
         date: form.date || undefined,
@@ -161,6 +168,19 @@ export default function NewBookingModal({ services, onClose, onCreate }: Props) 
                     <option key={id} value={id}>{name}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-500 font-medium mb-1 block">ডিউটির ধরন</label>
+                <select value={form.dutyType} onChange={set("dutyType")}
+                  className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white">
+                  <option value="">— নির্বাচন —</option>
+                  {DUTY_TYPES.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-slate-500 font-medium mb-1 block">সেবার দিন (দিন সংখ্যা)</label>
+                <input type="number" min="1" value={form.serviceDays} onChange={set("serviceDays")} placeholder="যেমন: 7"
+                  className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300" />
               </div>
               <div>
                 <label className="text-xs text-slate-500 font-medium mb-1 block">প্যাকেজ</label>
