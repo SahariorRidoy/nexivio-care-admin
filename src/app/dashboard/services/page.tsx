@@ -91,6 +91,11 @@ export default function ServicesPage() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"info" | "features" | "basic" | "standard" | "premium">("info");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [simpleModalOpen, setSimpleModalOpen] = useState(false);
+  const [simpleEditing, setSimpleEditing] = useState<Service | null>(null);
+  const [simpleForm, setSimpleForm] = useState({ nameEn: "", nameBn: "", shortDescEn: "", shortDescBn: "", descriptionEn: "", descriptionBn: "", image: null as string | null, imagePublicId: null as string | null, featuresEn: [] as string[], featuresBn: [] as string[], category: "", order: 0, isActive: true });
+  const [simpleSaving, setSimpleSaving] = useState(false);
+  const [simpleError, setSimpleError] = useState("");
 
   useEffect(() => {
     api.get<{ data: Service[] }>("/services")
@@ -110,6 +115,8 @@ export default function ServicesPage() {
   useEffect(() => setPage(1), [search]);
 
   const openAdd = () => { setEditing(null); setForm(empty); setError(""); setActiveTab("info"); setModalOpen(true); };
+  const openSimpleAdd = () => { setSimpleEditing(null); setSimpleForm({ nameEn: "", nameBn: "", shortDescEn: "", shortDescBn: "", descriptionEn: "", descriptionBn: "", image: null, imagePublicId: null, featuresEn: [], featuresBn: [], category: "", order: 0, isActive: true }); setSimpleError(""); setSimpleModalOpen(true); };
+  const openSimpleEdit = (row: Service) => { setSimpleEditing(row); setSimpleForm({ nameEn: row.nameEn, nameBn: row.nameBn, shortDescEn: row.shortDescEn ?? "", shortDescBn: row.shortDescBn ?? "", descriptionEn: row.descriptionEn ?? "", descriptionBn: row.descriptionBn ?? "", image: row.image, imagePublicId: row.imagePublicId, featuresEn: row.featuresEn ?? [], featuresBn: row.featuresBn ?? [], category: row.category ?? "", order: row.order, isActive: row.isActive }); setSimpleError(""); setSimpleModalOpen(true); };
   const openEdit = (row: Service) => {
     setEditing(row);
     setForm({
@@ -190,6 +197,29 @@ export default function ServicesPage() {
 
   const handleDelete = (id: string) => setDeleteId(id);
 
+  const handleSimpleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!simpleForm.nameEn.trim() || !simpleForm.nameBn.trim()) { setSimpleError("বাংলা ও ইংরেজি নাম প্রয়োজন"); return; }
+    setSimpleSaving(true); setSimpleError("");
+    try {
+      const body = { ...simpleForm, order: Number(simpleForm.order), packages: [] };
+      if (simpleEditing) {
+        const res = await api.patch<{ data: Service }>(`/services/${simpleEditing.id}`, body);
+        setData((prev) => prev.map((s) => s.id === simpleEditing.id ? res.data : s));
+        toast.success("সেবা সফলভাবে আপডেট হয়েছে!");
+      } else {
+        const res = await api.post<{ data: Service }>("/services", body);
+        setData((prev) => [res.data, ...prev]);
+        toast.success("নতুন সেবা সফলভাবে যোগ হয়েছে!");
+      }
+      setSimpleModalOpen(false);
+    } catch (err: unknown) {
+      setSimpleError(err instanceof Error ? err.message : "সংরক্ষণ ব্যর্থ হয়েছে");
+    } finally {
+      setSimpleSaving(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!deleteId) return;
     await api.delete(`/services/${deleteId}`).catch(() => {});
@@ -201,6 +231,16 @@ export default function ServicesPage() {
   const columns: Column<Service>[] = [
     { key: "nameBn", label: "নাম (বাংলা)" },
     { key: "nameEn", label: "নাম (ইংরেজি)" },
+    {
+      key: "packages", label: "ধরন",
+      render: (r) => (
+        <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+          r.packages && r.packages.length > 0 ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+        }`}>
+          {r.packages && r.packages.length > 0 ? "প্যাকেজ" : "সিম্পল"}
+        </span>
+      ),
+    },
     { key: "order", label: "ক্রম" },
     {
       key: "isActive", label: "অবস্থা",
@@ -229,9 +269,14 @@ export default function ServicesPage() {
           <h2 className="text-lg font-bold text-slate-800">সেবাসমূহ</h2>
           <p className="text-sm text-slate-500">{filtered.length}টি সেবা (মোট {data.length}টি)</p>
         </div>
-        <button onClick={openAdd} className="flex items-center gap-2 bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-          <Plus size={16} /> নতুন সেবা
-        </button>
+        <div className="flex gap-2">
+          <button onClick={openSimpleAdd} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+            <Plus size={16} /> সিম্পল সেবা
+          </button>
+          <button onClick={openAdd} className="flex items-center gap-2 bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+            <Plus size={16} /> প্যাকেজ সেবা
+          </button>
+        </div>
       </div>
 
       <div className="relative mb-4">
@@ -240,7 +285,10 @@ export default function ServicesPage() {
           className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300" />
       </div>
 
-      <AdminTable columns={columns} data={paginated} loading={loading} onEdit={openEdit} onDelete={handleDelete} emptyMessage="কোনো সেবা পাওয়া যায়নি।" />
+      <AdminTable columns={columns} data={paginated} loading={loading} onEdit={(row) => {
+        if (row.packages && row.packages.length > 0) openEdit(row);
+        else openSimpleEdit(row);
+      }} onDelete={handleDelete} emptyMessage="কোনো সেবা পাওয়া যায়নি।" />
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4 text-sm text-slate-600">
@@ -262,7 +310,7 @@ export default function ServicesPage() {
         message="এই সেবাটি স্থায়ীভাবে মুছে যাবে। আপনি কি নিশ্চিত?"
       />
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "সেবা সম্পাদনা" : "নতুন সেবা যোগ করুন"} width="max-w-3xl">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "সেবা সম্পাদনা" : "নতুন প্যাকেজ সেবা যোগ করুন"} width="max-w-3xl">
         <form onSubmit={handleSave} className="flex flex-col gap-0">
 
           {/* Tabs */}
@@ -406,6 +454,69 @@ export default function ServicesPage() {
             <button type="button" onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm rounded-lg border border-slate-200 hover:bg-slate-50">বাতিল</button>
             <button type="submit" disabled={saving} className="px-5 py-2 text-sm font-semibold rounded-lg bg-primary-700 text-white hover:bg-primary-800 disabled:opacity-60">
               {saving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={simpleModalOpen} onClose={() => setSimpleModalOpen(false)} title={simpleEditing ? "সিম্পল সেবা সম্পাদনা" : "নতুন সিম্পল সেবা যোগ করুন"} width="max-w-2xl">
+        <form onSubmit={handleSimpleSave} className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="নাম (ইংরেজি) *"><input required value={simpleForm.nameEn} onChange={(e) => setSimpleForm((f) => ({ ...f, nameEn: e.target.value }))} className={inp} /></Field>
+            <Field label="নাম (বাংলা) *"><input required value={simpleForm.nameBn} onChange={(e) => setSimpleForm((f) => ({ ...f, nameBn: e.target.value }))} className={inp} /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="সংক্ষিপ্ত বিবরণ (ইংরেজি)"><textarea rows={2} value={simpleForm.shortDescEn} onChange={(e) => setSimpleForm((f) => ({ ...f, shortDescEn: e.target.value }))} className={inp} /></Field>
+            <Field label="সংক্ষিপ্ত বিবরণ (বাংলা)"><textarea rows={2} value={simpleForm.shortDescBn} onChange={(e) => setSimpleForm((f) => ({ ...f, shortDescBn: e.target.value }))} className={inp} /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="বিস্তারিত বিবরণ (ইংরেজি)"><textarea rows={3} value={simpleForm.descriptionEn} onChange={(e) => setSimpleForm((f) => ({ ...f, descriptionEn: e.target.value }))} className={inp} /></Field>
+            <Field label="বিস্তারিত বিবরণ (বাংলা)"><textarea rows={3} value={simpleForm.descriptionBn} onChange={(e) => setSimpleForm((f) => ({ ...f, descriptionBn: e.target.value }))} className={inp} /></Field>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <Field label="ক্যাটাগরি">
+              <select value={simpleForm.category} onChange={(e) => setSimpleForm((f) => ({ ...f, category: e.target.value }))} className={inp}>
+                <option value="">— ক্যাটাগরি —</option>
+                {CATEGORY_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                <option value="physiotherapy">🦴 Physiotherapy</option>
+                <option value="onDemandNursing">⏰ On-Demand Nursing</option>
+                <option value="homeDiagnostics">🧪 Home Diagnostics</option>
+              </select>
+            </Field>
+            <Field label="ক্রম"><input type="number" value={simpleForm.order} onChange={(e) => setSimpleForm((f) => ({ ...f, order: Number(e.target.value) }))} className={inp} /></Field>
+            <Field label="অবস্থা">
+              <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                <input type="checkbox" checked={simpleForm.isActive} onChange={(e) => setSimpleForm((f) => ({ ...f, isActive: e.target.checked }))} className="h-4 w-4 accent-primary-600" />
+                <span className="text-sm text-slate-700">সক্রিয়</span>
+              </label>
+            </Field>
+          </div>
+          <Field label="ছবি">
+            <ImageUpload
+              value={simpleForm.image ?? undefined}
+              onChange={(url, publicId) => setSimpleForm((f) => ({ ...f, image: url, imagePublicId: publicId }))}
+              onClear={() => setSimpleForm((f) => ({ ...f, image: null, imagePublicId: null }))}
+            />
+          </Field>
+          <div>
+            <p className="text-xs font-medium text-slate-600 mb-2">বুলেট পয়েন্ট (EN + BN)</p>
+            <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-500 px-1 mb-1"><span>ইংরেজি</span><span>বাংলা</span></div>
+            {simpleForm.featuresEn.map((f, i) => (
+              <div key={i} className="flex gap-2 items-center mb-2">
+                <input value={f} onChange={(e) => setSimpleForm((sf) => ({ ...sf, featuresEn: sf.featuresEn.map((x, j) => j === i ? e.target.value : x) }))} placeholder={`Feature ${i + 1}`} className={inp} />
+                <input value={simpleForm.featuresBn[i] ?? ""} onChange={(e) => setSimpleForm((sf) => ({ ...sf, featuresBn: sf.featuresBn.map((x, j) => j === i ? e.target.value : x) }))} placeholder={`ফিচার ${i + 1}`} className={inp} />
+                <button type="button" onClick={() => setSimpleForm((sf) => ({ ...sf, featuresEn: sf.featuresEn.filter((_, j) => j !== i), featuresBn: sf.featuresBn.filter((_, j) => j !== i) }))} className="text-red-400 hover:text-red-600 shrink-0"><Trash2 size={15} /></button>
+              </div>
+            ))}
+            <button type="button" onClick={() => setSimpleForm((sf) => ({ ...sf, featuresEn: [...sf.featuresEn, ""], featuresBn: [...sf.featuresBn, ""] }))} className="text-sm text-primary-600 hover:underline flex items-center gap-1">
+              <Plus size={14} /> বুলেট যোগ করুন
+            </button>
+          </div>
+          {simpleError && <p className="text-sm text-red-500">{simpleError}</p>}
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button type="button" onClick={() => setSimpleModalOpen(false)} className="px-4 py-2 text-sm rounded-lg border border-slate-200 hover:bg-slate-50">বাতিল</button>
+            <button type="submit" disabled={simpleSaving} className="px-5 py-2 text-sm font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60">
+              {simpleSaving ? "সংরক্ষণ হচ্ছে..." : "সংরক্ষণ"}
             </button>
           </div>
         </form>
