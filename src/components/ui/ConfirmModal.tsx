@@ -7,9 +7,10 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   message?: string;
+  loading?: boolean;
 }
 
-export default function ConfirmModal({ open, onConfirm, onCancel, message = "আপনি কি এটি মুছে ফেলতে চান?" }: ConfirmModalProps) {
+export default function ConfirmModal({ open, onConfirm, onCancel, message = "আপনি কি এটি মুছে ফেলতে চান?", loading }: ConfirmModalProps) {
   if (!open) return null;
 
   return (
@@ -27,7 +28,8 @@ export default function ConfirmModal({ open, onConfirm, onCancel, message = "আ
           <button onClick={onCancel} className="flex-1 px-4 py-2 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
             বাতিল
           </button>
-          <button onClick={onConfirm} className="flex-1 px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors">
+          <button onClick={onConfirm} disabled={loading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-70">
+            {loading && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
             হ্যাঁ, মুছুন
           </button>
         </div>

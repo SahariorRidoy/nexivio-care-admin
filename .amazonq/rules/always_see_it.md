@@ -1,0 +1,1 @@
+the root folder  has backend and frontend project and this is admin project 
