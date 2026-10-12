@@ -10,15 +10,6 @@ import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
-type BannerType = 'offer' | 'campaign' | 'training' | 'service';
-
-const BANNER_TYPES: { value: BannerType; label: string }[] = [
-  { value: 'offer',    label: 'Running Offer' },
-  { value: 'campaign', label: 'Promotional Campaign' },
-  { value: 'training', label: 'Training Announcement' },
-  { value: 'service',  label: 'Care Service Promotion' },
-];
-
 interface Banner {
   id: string;
   titleEn: string;
@@ -27,8 +18,7 @@ interface Banner {
   subtitleBn: string | null;
   image: string;
   imagePublicId: string | null;
-  ctaLink: string | null;
-  type: BannerType;
+  subtitleStyle: string;
   isActive: boolean;
   order: number;
   createdAt: string;
@@ -36,12 +26,12 @@ interface Banner {
 
 interface FormData {
   titleEn: string; titleBn: string; subtitleEn: string; subtitleBn: string;
-  image: string; imagePublicId: string; ctaLink: string; type: BannerType; isActive: boolean; order: string;
+  image: string; imagePublicId: string; subtitleStyle: string; isActive: boolean; order: string;
 }
 
 const empty: FormData = {
   titleEn: "", titleBn: "", subtitleEn: "", subtitleBn: "",
-  image: "", imagePublicId: "", ctaLink: "", type: "campaign", isActive: true, order: "0",
+  image: "", imagePublicId: "", subtitleStyle: "static", isActive: true, order: "0",
 };
 
 const PAGE_SIZE = 10;
@@ -82,7 +72,7 @@ export default function BannersPage() {
       titleEn: row.titleEn, titleBn: row.titleBn,
       subtitleEn: row.subtitleEn ?? "", subtitleBn: row.subtitleBn ?? "",
       image: row.image, imagePublicId: row.imagePublicId ?? "",
-      ctaLink: row.ctaLink ?? "", type: row.type ?? "campaign", isActive: row.isActive, order: String(row.order),
+      subtitleStyle: row.subtitleStyle ?? "static", isActive: row.isActive, order: String(row.order),
     });
     setError(""); setModalOpen(true);
   };
@@ -99,7 +89,7 @@ export default function BannersPage() {
         titleEn: form.titleEn, titleBn: form.titleBn,
         subtitleEn: form.subtitleEn || undefined, subtitleBn: form.subtitleBn || undefined,
         image: form.image, imagePublicId: form.imagePublicId || undefined,
-        ctaLink: form.ctaLink || undefined, type: form.type, isActive: form.isActive, order: Number(form.order),
+        subtitleStyle: form.subtitleStyle, isActive: form.isActive, order: Number(form.order),
       };
       if (editing) {
         const res = await api.patch<{ data: Banner }>(`/banners/${editing.id}`, body);
@@ -138,15 +128,14 @@ export default function BannersPage() {
     },
     { key: "titleBn", label: "শিরোনাম (বাংলা)" },
     { key: "titleEn", label: "শিরোনাম (ইংরেজি)" },
-    { key: "type", label: "ধরন", render: (r) => {
-      const t = BANNER_TYPES.find((x) => x.value === r.type);
-      const colors: Record<BannerType, string> = {
-        offer: "bg-red-100 text-red-700",
-        campaign: "bg-orange-100 text-orange-700",
-        training: "bg-blue-100 text-blue-700",
-        service: "bg-green-100 text-green-700",
+    { key: "subtitleStyle", label: "সাবটাইটেল স্টাইল", render: (r) => {
+      const styles: Record<string, { label: string; cls: string }> = {
+        static:  { label: "স্ট্যাটিক",  cls: "bg-slate-100 text-slate-600" },
+        marquee: { label: "মার্কি",     cls: "bg-blue-100 text-blue-700" },
+        typing:  { label: "টাইপিং",    cls: "bg-purple-100 text-purple-700" },
       };
-      return <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${colors[r.type] ?? "bg-slate-100 text-slate-500"}`}>{t?.label ?? r.type}</span>;
+      const s = styles[r.subtitleStyle] ?? styles.static;
+      return <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>;
     }},
     { key: "order", label: "ক্রম" },
     { key: "isActive", label: "অবস্থা", render: (r) => (
@@ -207,21 +196,22 @@ export default function BannersPage() {
             <Field label="সাবটাইটেল (ইংরেজি)"><input value={form.subtitleEn} onChange={(e) => set("subtitleEn", e.target.value)} className={inp} /></Field>
             <Field label="সাবটাইটেল (বাংলা)"><input value={form.subtitleBn} onChange={(e) => set("subtitleBn", e.target.value)} className={inp} /></Field>
           </div>
-          <Field label="ব্যানার ধরন *">
-            <select value={form.type} onChange={(e) => set("type", e.target.value as BannerType)} className={inp}>
-              {BANNER_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-          </Field>
-          <Field label="CTA লিংক"><input value={form.ctaLink} onChange={(e) => set("ctaLink", e.target.value)} placeholder="https://..." className={inp} /></Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="ক্রম"><input type="number" value={form.order} onChange={(e) => set("order", e.target.value)} className={inp} /></Field>
-            <Field label="অবস্থা">
-              <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                <input type="checkbox" checked={form.isActive} onChange={(e) => set("isActive", e.target.checked)} className="h-4 w-4 accent-primary-600" />
-                <span className="text-sm text-slate-700">সক্রিয়</span>
-              </label>
+            <Field label="সাবটাইটেল স্টাইল">
+              <select value={form.subtitleStyle} onChange={(e) => set("subtitleStyle", e.target.value)} className={inp}>
+                <option value="static">স্ট্যাটিক (সাধারণ)</option>
+                <option value="marquee">মার্কি (স্ক্রলিং)</option>
+                <option value="typing">টাইপিং (অ্যানিমেশন)</option>
+              </select>
             </Field>
+            <Field label="ক্রম"><input type="number" value={form.order} onChange={(e) => set("order", e.target.value)} className={inp} /></Field>
           </div>
+          <Field label="অবস্থা">
+            <label className="flex items-center gap-2 mt-2 cursor-pointer">
+              <input type="checkbox" checked={form.isActive} onChange={(e) => set("isActive", e.target.checked)} className="h-4 w-4 accent-primary-600" />
+              <span className="text-sm text-slate-700">সক্রিয়</span>
+            </label>
+          </Field>
           <Field label="ব্যানার ছবি *">
             <ImageUpload value={form.image || undefined} onChange={(url, publicId) => { set("image", url); set("imagePublicId", publicId); }} onClear={() => { set("image", ""); set("imagePublicId", ""); }} />
           </Field>

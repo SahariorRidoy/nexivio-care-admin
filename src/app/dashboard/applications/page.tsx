@@ -16,6 +16,7 @@ interface Application {
   education?: string;
   cvUrl?: string;
   nidUrl?: string;
+  experienceCertUrl?: string;
   status: string;
   createdAt: string;
 }
@@ -196,6 +197,23 @@ export default function ApplicationsPage() {
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary-600 hover:underline text-xs font-medium"
+          >
+            দেখুন
+          </a>
+        ) : (
+          <span className="text-slate-400">—</span>
+        ),
+    },
+    {
+      key: "experienceCertUrl",
+      label: "অভিজ্ঞতা সার্টিফিকেট",
+      render: (r) =>
+        r.experienceCertUrl ? (
+          <a
+            href={r.experienceCertUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-600 hover:underline text-xs font-medium"
           >
             দেখুন
           </a>
