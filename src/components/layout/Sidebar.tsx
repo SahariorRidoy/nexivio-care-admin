@@ -22,6 +22,7 @@ import {
   Smartphone,
   Car,
   Truck,
+  Receipt,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const navGroups = [
       { href: "/dashboard/services", label: "Main Services", Icon: Briefcase },
       { href: "/dashboard/other-services", label: "Additional Services", Icon: Plus },
       { href: "/dashboard/bookings", label: "Service Bookings", Icon: Calendar },
+      { href: "/dashboard/receipts", label: "Receipts & Invoices", Icon: Receipt },
     ],
   },
   {

@@ -477,7 +477,7 @@ export default function VehicleRegistrationsPage() {
   const paginatedVehicles = filteredVehicles.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   // reset page on filter change
-  useMemo(() => setPage(1), [search, filterStatus, filterType, filterAc]);
+  useEffect(() => setPage(1), [search, filterStatus, filterType, filterAc]);
 
   const filteredOwners = useMemo(() => {
     const q = search.toLowerCase();
