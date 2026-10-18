@@ -73,10 +73,13 @@ const TIERS = ["basic", "standard", "premium"] as const;
 const TIER_FALLBACK = { basic: "বেসিক", standard: "স্ট্যান্ডার্ড", premium: "প্রিমিয়াম" };
 
 const CATEGORY_OPTIONS = [
-  { value: "caregiver",   label: "🤝 Caregiver Service" },
-  { value: "nursing",     label: "🩺 Nursing Service" },
-  { value: "elder-care",  label: "👴 Elder Care" },
-  { value: "nanny-care",  label: "👶 Nanny Care" },
+  { value: "caregiver",        label: "🤝 Caregiver Service" },
+  { value: "nursing",          label: "🩺 Nursing Service" },
+  { value: "elder-care",       label: "👴 Elder Care" },
+  { value: "nanny-care",       label: "👶 Nanny Care" },
+  { value: "physiotherapy",    label: "🦴 Physiotherapy" },
+  { value: "onDemandNursing",  label: "⏰ On-Demand Nursing" },
+  { value: "homeDiagnostics",  label: "🧪 Home Diagnostics" },
 ];
 
 export default function ServicesPage() {
@@ -202,7 +205,14 @@ export default function ServicesPage() {
     if (!simpleForm.nameEn.trim() || !simpleForm.nameBn.trim()) { setSimpleError("বাংলা ও ইংরেজি নাম প্রয়োজন"); return; }
     setSimpleSaving(true); setSimpleError("");
     try {
-      const body = { ...simpleForm, order: Number(simpleForm.order), packages: [] };
+      const { image, imagePublicId, ...rest } = simpleForm;
+      const body = {
+        ...rest,
+        order: Number(simpleForm.order),
+        packages: [],
+        ...(image !== null && { image }),
+        ...(imagePublicId !== null && { imagePublicId }),
+      };
       if (simpleEditing) {
         const res = await api.patch<{ data: Service }>(`/services/${simpleEditing.id}`, body);
         setData((prev) => prev.map((s) => s.id === simpleEditing.id ? res.data : s));
@@ -478,9 +488,6 @@ export default function ServicesPage() {
               <select value={simpleForm.category} onChange={(e) => setSimpleForm((f) => ({ ...f, category: e.target.value }))} className={inp}>
                 <option value="">— ক্যাটাগরি —</option>
                 {CATEGORY_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-                <option value="physiotherapy">🦴 Physiotherapy</option>
-                <option value="onDemandNursing">⏰ On-Demand Nursing</option>
-                <option value="homeDiagnostics">🧪 Home Diagnostics</option>
               </select>
             </Field>
             <Field label="ক্রম"><input type="number" value={simpleForm.order} onChange={(e) => setSimpleForm((f) => ({ ...f, order: Number(e.target.value) }))} className={inp} /></Field>
