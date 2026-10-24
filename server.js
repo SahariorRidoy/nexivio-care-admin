@@ -1,25 +1,17 @@
 import { createServer } from "http";
-import { parse } from "url";
 import next from "next";
+
 const dev = process.env.NODE_ENV !== "production";
- 
-const port = !dev ? process.env.PORT : 3000;
- 
-// Create the Express-Next App
-const app = next({ dev });
+const port = parseInt(process.env.PORT, 10) || 3000;
+
+const app = next({ dev, dir: process.cwd() });
 const handle = app.getRequestHandler();
- 
+
 app
   .prepare()
   .then(() => {
-    createServer((req, res) => {
-      const parsedUrl = parse(req.url, true);
-      const { pathname, query } = parsedUrl;
-      handle(req, res, parsedUrl);
-      console.log("pathname", pathname);
-    }).listen(port, (err) => {
-      if (err) throw err;
-      console.log(`> Ready on http://localhost:${port}`);
+    createServer((req, res) => handle(req, res)).listen(port, () => {
+      console.log(`> Ready on port ${port}`);
     });
   })
   .catch((ex) => {
