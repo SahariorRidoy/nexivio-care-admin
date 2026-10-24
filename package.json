@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --port 3001",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node --max-old-space-size=256 server.cjs",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
