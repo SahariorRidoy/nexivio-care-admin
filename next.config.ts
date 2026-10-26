@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import path from "path";
 const nextConfig: NextConfig = {
+  output: "standalone",
   outputFileTracingRoot: path.join(process.cwd()),
   experimental: {
     cpus: 1,
