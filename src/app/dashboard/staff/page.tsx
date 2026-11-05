@@ -9,12 +9,16 @@ import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ImageUpload from "@/components/ui/ImageUpload";
 
-interface Service {
-  id: string;
-  nameEn: string;
-  nameBn: string;
-  slug: string;
-}
+type StaffCategory = "Nurse" | "Caregiver" | "Nanny" | "Doctor" | "Physiotherapist" | "Others";
+
+const CATEGORIES: { value: StaffCategory; labelEn: string; labelBn: string }[] = [
+  { value: "Nurse",           labelEn: "Nurse",           labelBn: "নার্স" },
+  { value: "Caregiver",       labelEn: "Caregiver",       labelBn: "কেয়ারগিভার" },
+  { value: "Nanny",           labelEn: "Nanny",           labelBn: "ন্যানি" },
+  { value: "Doctor",          labelEn: "Doctor",          labelBn: "ডাক্তার" },
+  { value: "Physiotherapist", labelEn: "Physiotherapist", labelBn: "ফিজিওথেরাপিস্ট" },
+  { value: "Others",          labelEn: "Others",          labelBn: "অন্যান্য" },
+];
 
 interface StaffMember {
   id: string;
@@ -26,8 +30,7 @@ interface StaffMember {
   imagePublicId: string | null;
   pointsEn: string[];
   pointsBn: string[];
-  serviceId: string | null;
-  service: Service | null;
+  category: StaffCategory;
   order: number;
   isActive: boolean;
 }
@@ -37,7 +40,7 @@ interface FormData {
   designationEn: string; designationBn: string;
   image: string | null; imagePublicId: string | null;
   pointsEn: string[]; pointsBn: string[];
-  serviceId: string;
+  category: StaffCategory;
   order: string; isActive: boolean;
 }
 
@@ -45,14 +48,13 @@ const empty: FormData = {
   nameEn: "", nameBn: "", designationEn: "", designationBn: "",
   image: null, imagePublicId: null,
   pointsEn: ["", ""], pointsBn: ["", ""],
-  serviceId: "",
+  category: "Others",
   order: "0", isActive: true,
 };
 
 export default function StaffPage() {
   const [data, setData] = useState<StaffMember[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [filterServiceId, setFilterServiceId] = useState("");
+  const [filterCategory, setFilterCategory] = useState<StaffCategory | "">("");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
@@ -62,14 +64,8 @@ export default function StaffPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      api.get<{ data: StaffMember[] }>("/staff/all"),
-      api.get<{ data: Service[] }>("/services"),
-    ])
-      .then(([staffRes, servicesRes]) => {
-        setData(staffRes.data);
-        setServices(servicesRes.data);
-      })
+    api.get<{ data: StaffMember[] }>("/staff/all")
+      .then((res) => setData(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -83,7 +79,7 @@ export default function StaffPage() {
       image: m.image, imagePublicId: m.imagePublicId,
       pointsEn: m.pointsEn.length ? [...m.pointsEn] : ["", ""],
       pointsBn: m.pointsBn.length ? [...m.pointsBn] : ["", ""],
-      serviceId: m.serviceId ?? "",
+      category: m.category,
       order: String(m.order), isActive: m.isActive,
     });
     setError(""); setModalOpen(true);
@@ -118,7 +114,7 @@ export default function StaffPage() {
         imagePublicId: form.imagePublicId || undefined,
         pointsEn: form.pointsEn.filter(Boolean),
         pointsBn: form.pointsBn.filter(Boolean),
-        serviceId: form.serviceId || null,
+        category: form.category,
         order: Number(form.order), isActive: form.isActive,
       };
       if (editing) {
@@ -144,11 +140,10 @@ export default function StaffPage() {
     toast.success("কর্মী সফলভাবে মুছে ফেলা হয়েছে!");
   };
 
-  const filtered = filterServiceId === "__none__"
-    ? data.filter((m) => !m.serviceId)
-    : filterServiceId
-      ? data.filter((m) => m.serviceId === filterServiceId)
-      : data;
+  const filtered = filterCategory ? data.filter((m) => m.category === filterCategory) : data;
+
+  const categoryLabel = (cat: StaffCategory) =>
+    CATEGORIES.find((c) => c.value === cat)?.labelBn ?? cat;
 
   return (
     <div>
@@ -165,15 +160,14 @@ export default function StaffPage() {
       {/* Filter */}
       <div className="mb-5">
         <select
-          value={filterServiceId}
-          onChange={(e) => setFilterServiceId(e.target.value)}
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value as StaffCategory | "")}
           className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300"
         >
-          <option value="">সকল সার্ভিস</option>
-          {services.map((s) => (
-            <option key={s.id} value={s.id}>{s.nameBn}</option>
+          <option value="">সকল ক্যাটাগরি</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.labelBn} ({c.labelEn})</option>
           ))}
-          <option value="__none__">সার্ভিস নেই</option>
         </select>
       </div>
 
@@ -187,10 +181,10 @@ export default function StaffPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filtered.map((m) => (
             <div key={m.id} className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="aspect-[4/3] bg-slate-100">
+              <div className="aspect-[3/4] bg-slate-100">
                 {m.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={assetUrl(m.image)} alt={m.nameBn} className="w-full h-full object-cover" />
+                  <img src={assetUrl(m.image)} alt={m.nameBn} className="w-full h-full object-cover object-top" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-primary-300">
                     {m.nameBn.charAt(0)}
@@ -200,7 +194,7 @@ export default function StaffPage() {
               <div className="p-3">
                 <p className="font-semibold text-slate-800 text-sm truncate">{m.nameBn}</p>
                 {m.designationBn && <p className="text-xs text-slate-500 truncate">{m.designationBn}</p>}
-                {m.service && <p className="text-xs text-primary-600 truncate">{m.service.nameBn}</p>}
+                <p className="text-xs text-primary-600 font-medium mt-0.5">{categoryLabel(m.category)}</p>
                 {m.pointsBn.length > 0 && (
                   <ul className="mt-1.5 space-y-0.5">
                     {m.pointsBn.slice(0, 2).map((p, i) => (
@@ -240,11 +234,11 @@ export default function StaffPage() {
             <Field label="পদবি (ইংরেজি)"><input value={form.designationEn} onChange={(e) => set("designationEn", e.target.value)} className={inp} /></Field>
             <Field label="পদবি (বাংলা)"><input value={form.designationBn} onChange={(e) => set("designationBn", e.target.value)} className={inp} /></Field>
           </div>
-          <Field label="সার্ভিস">
-            <select value={form.serviceId} onChange={(e) => set("serviceId", e.target.value)} className={inp}>
-              <option value="">-- সার্ভিস নির্বাচন করুন --</option>
-              {services.map((s) => (
-                <option key={s.id} value={s.id}>{s.nameBn} ({s.nameEn})</option>
+
+          <Field label="ক্যাটাগরি *">
+            <select value={form.category} onChange={(e) => set("category", e.target.value as StaffCategory)} className={inp}>
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.labelBn} ({c.labelEn})</option>
               ))}
             </select>
           </Field>

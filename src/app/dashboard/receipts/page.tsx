@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useMemo } from "react";
 import {
-  Search, Filter, Plus, Receipt, FileText, Pencil, Trash2,
+  Search, Filter, Receipt, FileText, Pencil, Trash2, Layers,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import AdminTable, { type Column } from "@/components/ui/AdminTable";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ReceiptFormModal from "@/components/ui/ReceiptFormModal";
@@ -17,7 +17,11 @@ import StandaloneInvoiceView, { type StandaloneInvoiceData } from "@/components/
 
 const PAGE_SIZE = 10;
 
-type Tab = "receipts" | "invoices";
+type Tab = "all" | "receipts" | "invoices";
+
+type CombinedRow =
+  | (StandaloneReceiptData & { _kind: "receipt" })
+  | (StandaloneInvoiceData & { _kind: "invoice" });
 
 const payStatusClass: Record<string, string> = {
   paid: "bg-green-100 text-green-700",
@@ -57,7 +61,7 @@ function Pagination({ page, totalPages, total, onChange }: { page: number; total
 }
 
 export default function ReceiptsPage() {
-  const [tab, setTab] = useState<Tab>("receipts");
+  const [tab, setTab] = useState<Tab>("all");
 
   // Receipts state
   const [receipts, setReceipts] = useState<StandaloneReceiptData[]>([]);
@@ -123,9 +127,21 @@ export default function ReceiptsPage() {
     });
   }, [invoices, search, filterStatus, dateFrom, dateTo]);
 
-  const activeList = tab === "receipts" ? filteredReceipts : filteredInvoices;
-  const totalPages = Math.max(1, Math.ceil(activeList.length / PAGE_SIZE));
+  // ── Combined list (newest first), filtered by the active tab ──
+  const combined = useMemo<CombinedRow[]>(() => {
+    const rows: CombinedRow[] = [];
+    if (tab !== "invoices") rows.push(...filteredReceipts.map((r) => ({ ...r, _kind: "receipt" as const })));
+    if (tab !== "receipts") rows.push(...filteredInvoices.map((i) => ({ ...i, _kind: "invoice" as const })));
+    return rows.sort((a, b) => {
+      const da = a._kind === "receipt" ? a.date : a.invoiceDate;
+      const db = b._kind === "receipt" ? b.date : b.invoiceDate;
+      return db.localeCompare(da);
+    });
+  }, [tab, filteredReceipts, filteredInvoices]);
+
+  const totalPages = Math.max(1, Math.ceil(combined.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
+  const paginated = combined.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   // ── Receipt CRUD ──
   const saveReceipt = async (data: Omit<StandaloneReceiptData, "id" | "receiptNumber" | "createdAt" | "updatedAt">) => {
@@ -177,40 +193,60 @@ export default function ReceiptsPage() {
     toast.success("ইনভয়েস মুছে ফেলা হয়েছে!");
   };
 
-  // ── Receipt columns ──
-  const receiptColumns: Column<StandaloneReceiptData>[] = [
+  // ── Unified columns for the combined list ──
+  const columns: Column<CombinedRow>[] = [
     {
-      key: "receiptNumber", label: "রিসিট নং",
-      render: (r) => <span className="text-xs font-mono font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{r.receiptNumber}</span>,
+      key: "_kind", label: "ধরন",
+      render: (r) => r._kind === "receipt" ? (
+        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
+          <Receipt size={11} /> রিসিট
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+          <FileText size={11} /> ইনভয়েস
+        </span>
+      ),
     },
     {
-      key: "date", label: "তারিখ",
-      render: (r) => <div className="text-xs text-slate-500">{formatDate(r.date)}</div>,
+      key: "id", label: "নং",
+      render: (r) => <span className="text-xs font-mono font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{r._kind === "receipt" ? r.receiptNumber : r.invoiceNumber}</span>,
     },
     {
-      key: "receivedFrom", label: "প্রাপক / ফোন",
+      key: "createdAt", label: "তারিখ",
+      render: (r) => <div className="text-xs text-slate-500">{formatDate(r._kind === "receipt" ? r.date : r.invoiceDate)}</div>,
+    },
+    {
+      key: "phone", label: "নাম / ফোন",
       render: (r) => (
         <div>
-          <div className="font-medium text-slate-800">{r.receivedFrom}</div>
+          <div className="font-medium text-slate-800">{r._kind === "receipt" ? r.receivedFrom : r.clientName}</div>
           <div className="text-xs text-slate-400">{r.phone}</div>
         </div>
       ),
     },
     {
-      key: "serviceType", label: "সেবা",
-      render: (r) => <div className="text-sm text-slate-700">{r.serviceType}</div>,
-    },
-    {
-      key: "amount", label: "মোট / পরিশোধ",
+      key: "paidAmount", label: "বিবরণ",
       render: (r) => (
-        <div>
-          <div className="font-semibold text-slate-800 text-sm">৳{r.amount.toLocaleString()}</div>
-          {r.paymentStatus === "partial" && <div className="text-xs text-amber-600">পরিশোধ: ৳{r.paidAmount.toLocaleString()}</div>}
+        <div className="text-sm text-slate-700">
+          {r._kind === "receipt" ? r.serviceType : `${r.items?.length ?? 0}টি আইটেম`}
         </div>
       ),
     },
     {
-      key: "paymentStatus", label: "পেমেন্ট",
+      key: "paymentStatus", label: "মোট / বাকি",
+      render: (r) => {
+        const total = r._kind === "receipt" ? r.amount : r.total;
+        const due = total - r.paidAmount;
+        return (
+          <div>
+            <div className="font-semibold text-slate-800 text-sm">৳{total.toLocaleString()}</div>
+            {due > 0 && <div className="text-xs text-amber-600">বাকি: ৳{due.toLocaleString()}</div>}
+          </div>
+        );
+      },
+    },
+    {
+      key: "_status" as keyof CombinedRow, label: "পেমেন্ট",
       render: (r) => (
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${payStatusClass[r.paymentStatus] ?? "bg-slate-100 text-slate-600"}`}>
           {r.paymentStatus === "paid" ? "Paid" : r.paymentStatus === "partial" ? "Partial" : "Unpaid"}
@@ -218,83 +254,31 @@ export default function ReceiptsPage() {
       ),
     },
     {
-      key: "_actions" as keyof StandaloneReceiptData, label: "",
+      key: "_actions" as keyof CombinedRow, label: "",
       render: (r) => (
         <div className="flex items-center gap-1.5">
-          <button onClick={() => setViewReceipt(r)} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors">
-            <Receipt size={12} /> View
+          <button
+            onClick={() => r._kind === "receipt" ? setViewReceipt(r) : setViewInvoice(r)}
+            className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors ${r._kind === "receipt" ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100" : "text-blue-600 bg-blue-50 hover:bg-blue-100"}`}
+          >
+            {r._kind === "receipt" ? <Receipt size={12} /> : <FileText size={12} />} View
           </button>
-          <button onClick={() => { setEditReceipt(r); setReceiptModal(true); }} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors">
+          <button
+            onClick={() => r._kind === "receipt" ? (setEditReceipt(r), setReceiptModal(true)) : (setEditInvoice(r), setInvoiceModal(true))}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+          >
             <Pencil size={12} /> Edit
           </button>
-          <button onClick={() => setDeleteReceiptId(r.id)} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
+          <button
+            onClick={() => r._kind === "receipt" ? setDeleteReceiptId(r.id) : setDeleteInvoiceId(r.id)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+          >
             <Trash2 size={12} />
           </button>
         </div>
       ),
     },
   ];
-
-  // ── Invoice columns ──
-  const invoiceColumns: Column<StandaloneInvoiceData>[] = [
-    {
-      key: "invoiceNumber", label: "ইনভয়েস নং",
-      render: (r) => <span className="text-xs font-mono font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{r.invoiceNumber}</span>,
-    },
-    {
-      key: "invoiceDate", label: "তারিখ",
-      render: (r) => <div className="text-xs text-slate-500">{formatDate(r.invoiceDate)}</div>,
-    },
-    {
-      key: "clientName", label: "ক্লায়েন্ট / ফোন",
-      render: (r) => (
-        <div>
-          <div className="font-medium text-slate-800">{r.clientName}</div>
-          <div className="text-xs text-slate-400">{r.phone}</div>
-        </div>
-      ),
-    },
-    {
-      key: "total", label: "মোট / পরিশোধ",
-      render: (r) => (
-        <div>
-          <div className="font-semibold text-slate-800 text-sm">৳{r.total.toLocaleString()}</div>
-          {r.paymentStatus !== "paid" && <div className="text-xs text-amber-600">বাকি: ৳{(r.total - r.paidAmount).toLocaleString()}</div>}
-        </div>
-      ),
-    },
-    {
-      key: "paymentStatus", label: "পেমেন্ট",
-      render: (r) => (
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${payStatusClass[r.paymentStatus] ?? "bg-slate-100 text-slate-600"}`}>
-          {r.paymentStatus === "paid" ? "Paid" : r.paymentStatus === "partial" ? "Partial" : "Unpaid"}
-        </span>
-      ),
-    },
-    {
-      key: "createdAt", label: "তৈরির সময়",
-      render: (r) => <div className="text-xs text-slate-400">{formatDateTime(r.createdAt)}</div>,
-    },
-    {
-      key: "_actions" as keyof StandaloneInvoiceData, label: "",
-      render: (r) => (
-        <div className="flex items-center gap-1.5">
-          <button onClick={() => setViewInvoice(r)} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-            <FileText size={12} /> View
-          </button>
-          <button onClick={() => { setEditInvoice(r); setInvoiceModal(true); }} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors">
-            <Pencil size={12} /> Edit
-          </button>
-          <button onClick={() => setDeleteInvoiceId(r.id)} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
-            <Trash2 size={12} />
-          </button>
-        </div>
-      ),
-    },
-  ];
-
-  const paginatedReceipts = filteredReceipts.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-  const paginatedInvoices = filteredInvoices.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div>
@@ -323,9 +307,7 @@ export default function ReceiptsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-bold text-slate-800">রিসিট ও ইনভয়েস</h2>
-          <p className="text-sm text-slate-500">
-            {tab === "receipts" ? `${filteredReceipts.length}টি রিসিট` : `${filteredInvoices.length}টি ইনভয়েস`} পাওয়া গেছে
-          </p>
+          <p className="text-sm text-slate-500">{combined.length}টি রেকর্ড পাওয়া গেছে</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -343,8 +325,15 @@ export default function ReceiptsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — these only filter the combined list */}
       <div className="flex items-center gap-1 mb-5 bg-slate-100 p-1 rounded-xl w-fit">
+        <button
+          onClick={() => setTab("all")}
+          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === "all" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+        >
+          <Layers size={15} /> সব
+          <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${tab === "all" ? "bg-slate-200 text-slate-700" : "bg-slate-200 text-slate-500"}`}>{receipts.length + invoices.length}</span>
+        </button>
         <button
           onClick={() => setTab("receipts")}
           className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${tab === "receipts" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
@@ -367,7 +356,7 @@ export default function ReceiptsPage() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder={tab === "receipts" ? "নাম, ফোন, রিসিট নং বা সেবা দিয়ে খুঁজুন..." : "নাম, ফোন বা ইনভয়েস নং দিয়ে খুঁজুন..."}
+            placeholder="নাম, ফোন, রিসিট/ইনভয়েস নং বা সেবা দিয়ে খুঁজুন..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300"
@@ -392,27 +381,13 @@ export default function ReceiptsPage() {
       </div>
 
       {/* Table */}
-      {tab === "receipts" ? (
-        <>
-          <AdminTable
-            columns={receiptColumns}
-            data={paginatedReceipts}
-            loading={receiptsLoading}
-            emptyMessage="কোনো রিসিট পাওয়া যায়নি।"
-          />
-          <Pagination page={safePage} totalPages={totalPages} total={filteredReceipts.length} onChange={setPage} />
-        </>
-      ) : (
-        <>
-          <AdminTable
-            columns={invoiceColumns}
-            data={paginatedInvoices}
-            loading={invoicesLoading}
-            emptyMessage="কোনো ইনভয়েস পাওয়া যায়নি।"
-          />
-          <Pagination page={safePage} totalPages={totalPages} total={filteredInvoices.length} onChange={setPage} />
-        </>
-      )}
+      <AdminTable
+        columns={columns}
+        data={paginated}
+        loading={receiptsLoading || invoicesLoading}
+        emptyMessage="কোনো রিসিট বা ইনভয়েস পাওয়া যায়নি।"
+      />
+      <Pagination page={safePage} totalPages={totalPages} total={combined.length} onChange={setPage} />
     </div>
   );
 }

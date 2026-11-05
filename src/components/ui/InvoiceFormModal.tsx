@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Save, Plus, Trash2 } from "lucide-react";
-import type { StandaloneInvoiceData, InvoiceItem } from "@/components/ui/StandaloneInvoiceView";
+import { itemDays, itemAmount, type StandaloneInvoiceData, type InvoiceItem } from "@/components/ui/StandaloneInvoiceView";
 
 interface Props {
   initial?: StandaloneInvoiceData | null;
@@ -31,7 +31,7 @@ const SERVICE_SUGGESTIONS = ["Caregiver Service", "Nursing Service", "Nanny Care
 const inp = "h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20";
 const labelCls = "text-[11px] text-slate-400 uppercase tracking-wide mb-0.5 block";
 
-const emptyItem = (): InvoiceItem => ({ service: "", package: "", rate: 0, days: 1, amount: 0 });
+const emptyItem = (): InvoiceItem => ({ service: "", package: "", serviceStart: "", serviceEnd: "", rate: 0, qty: 1, days: 1, amount: 0 });
 
 export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
   const [form, setForm] = useState<FormData>({
@@ -48,7 +48,9 @@ export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
     notes: initial?.notes ?? "",
   });
   const [items, setItems] = useState<InvoiceItem[]>(
-    initial?.items?.length ? initial.items : [emptyItem()]
+    initial?.items?.length
+      ? initial.items.map((it) => ({ ...it, qty: it.qty ?? 1 }))
+      : [emptyItem()]
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -56,17 +58,15 @@ export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
   const set = (k: keyof FormData, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const updateItem = (i: number, k: keyof InvoiceItem, v: string | number) => {
-    setItems((prev) => {
-      const next = prev.map((item, idx) => {
-        if (idx !== i) return item;
-        const updated = { ...item, [k]: v };
-        if (k === "rate" || k === "days") {
-          updated.amount = (Number(k === "rate" ? v : updated.rate) || 0) * (Number(k === "days" ? v : updated.days) || 0);
-        }
-        return updated;
-      });
-      return next;
-    });
+    setItems((prev) => prev.map((item, idx) => {
+      if (idx !== i) return item;
+      const updated = { ...item, [k]: v };
+      if (k === "rate" || k === "qty" || k === "serviceStart" || k === "serviceEnd") {
+        updated.days = itemDays(updated);
+        updated.amount = itemAmount(updated);
+      }
+      return updated;
+    }));
   };
 
   const subtotal = items.reduce((s, it) => s + (it.amount || 0), 0);
@@ -88,6 +88,10 @@ export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
     if (!form.phone.trim()) return setError("Mobile number is required");
     if (!form.address.trim()) return setError("Address is required");
     if (items.some((it) => !it.service.trim())) return setError("All service rows must have a description");
+    if (items.some((it) => (it.qty ?? 0) < 1)) return setError("Every service row needs a quantity of at least 1");
+    if (items.some((it) => it.serviceStart && it.serviceEnd && it.serviceEnd < it.serviceStart)) {
+      return setError("Service end date cannot be before the start date");
+    }
     if (total <= 0) return setError("Total amount must be greater than 0");
     setError("");
     setSaving(true);
@@ -116,7 +120,7 @@ export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[95vh]">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[95vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
@@ -171,14 +175,17 @@ export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
                 <Plus size={13} /> Add Row
               </button>
             </div>
+            <datalist id="svc-suggestions">
+              {SERVICE_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
+            </datalist>
             <div className="border border-slate-200 rounded-xl overflow-hidden">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-slate-800 text-white">
                     <th className="px-3 py-2 text-left font-semibold">Service Description</th>
-                    <th className="px-3 py-2 text-left font-semibold w-28">Package</th>
+                    <th className="px-3 py-2 text-center font-semibold w-36">Service Period</th>
                     <th className="px-3 py-2 text-right font-semibold w-24">Rate (৳)</th>
-                    <th className="px-3 py-2 text-center font-semibold w-16">Days</th>
+                    <th className="px-3 py-2 text-center font-semibold w-16">Qty</th>
                     <th className="px-3 py-2 text-right font-semibold w-24">Amount (৳)</th>
                     <th className="w-8" />
                   </tr>
@@ -187,24 +194,43 @@ export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
                   {items.map((item, i) => (
                     <tr key={i} className="border-t border-slate-100">
                       <td className="px-2 py-1.5">
-                        <input
-                          list="svc-suggestions"
-                          value={item.service}
-                          onChange={(e) => updateItem(i, "service", e.target.value)}
-                          placeholder="Service name..."
-                          className="h-8 w-full rounded-md border border-slate-200 px-2 text-xs focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
-                        />
-                        <datalist id="svc-suggestions">
-                          {SERVICE_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
-                        </datalist>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            list="svc-suggestions"
+                            value={item.service}
+                            onChange={(e) => updateItem(i, "service", e.target.value)}
+                            placeholder="Service description..."
+                            className="h-8 flex-[3] min-w-0 rounded-md border border-slate-200 px-2 text-xs focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
+                          />
+                          <input
+                            value={item.package ?? ""}
+                            onChange={(e) => updateItem(i, "package", e.target.value)}
+                            placeholder="Sub-note (optional)"
+                            className="h-8 flex-[2] min-w-0 rounded-md border border-slate-200 px-2 text-[11px] text-slate-600 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
+                          />
+                        </div>
                       </td>
                       <td className="px-2 py-1.5">
-                        <input
-                          value={item.package ?? ""}
-                          onChange={(e) => updateItem(i, "package", e.target.value)}
-                          placeholder="Package..."
-                          className="h-8 w-full rounded-md border border-slate-200 px-2 text-xs focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
-                        />
+                        <div className="flex flex-col gap-1">
+                          <input
+                            type="date"
+                            value={item.serviceStart ?? ""}
+                            onChange={(e) => updateItem(i, "serviceStart", e.target.value)}
+                            title="Service start date"
+                            className="h-7 w-full rounded-md border border-slate-200 px-1.5 text-[11px] text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
+                          />
+                          <input
+                            type="date"
+                            value={item.serviceEnd ?? ""}
+                            min={item.serviceStart || undefined}
+                            onChange={(e) => updateItem(i, "serviceEnd", e.target.value)}
+                            title="Service end date"
+                            className="h-7 w-full rounded-md border border-slate-200 px-1.5 text-[11px] text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
+                          />
+                          <span className="text-[10px] font-semibold text-center text-primary-600">
+                            {itemDays(item)} {itemDays(item) === 1 ? "day" : "days"}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-2 py-1.5">
                         <input
@@ -212,20 +238,27 @@ export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
                           value={item.rate || ""}
                           onChange={(e) => updateItem(i, "rate", parseFloat(e.target.value) || 0)}
                           placeholder="0"
+                          title="Rate per caregiver, per day"
                           className="h-8 w-full rounded-md border border-slate-200 px-2 text-xs text-right focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
                         />
                       </td>
                       <td className="px-2 py-1.5">
                         <input
-                          type="number" min="0"
-                          value={item.days || ""}
-                          onChange={(e) => updateItem(i, "days", parseFloat(e.target.value) || 0)}
+                          type="number" min="1" step="1"
+                          value={item.qty ?? ""}
+                          onChange={(e) => updateItem(i, "qty", parseInt(e.target.value, 10) || 0)}
                           placeholder="1"
-                          className="h-8 w-full rounded-md border border-slate-200 px-2 text-xs text-center focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
+                          title="Number of caregivers"
+                          className="h-8 w-full rounded-md border border-slate-200 px-2 text-xs text-center font-semibold focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
                         />
                       </td>
-                      <td className="px-2 py-1.5 text-right font-semibold text-slate-700">
-                        {item.amount > 0 ? item.amount.toLocaleString() : "—"}
+                      <td className="px-2 py-1.5 text-right">
+                        <div className="font-semibold text-slate-800">{item.amount > 0 ? item.amount.toLocaleString() : "—"}</div>
+                        {item.rate > 0 && (
+                          <div className="text-[10px] text-slate-400">
+                            {itemDays(item)} × {item.rate.toLocaleString()} × {item.qty ?? 1}
+                          </div>
+                        )}
                       </td>
                       <td className="px-1 py-1.5">
                         {items.length > 1 && (
