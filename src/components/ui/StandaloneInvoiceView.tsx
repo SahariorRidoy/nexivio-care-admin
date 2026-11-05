@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { usePdfExport, PdfToolbar } from "@/components/ui/PdfToolbar";
-import { numberToWords } from "@/lib/utils";
+import { numberToWords, assetUrl } from "@/lib/utils";
 
 export interface InvoiceItem {
   service: string;
@@ -40,6 +40,8 @@ export interface StandaloneInvoiceData {
 interface Props {
   invoice: StandaloneInvoiceData;
   onClose: () => void;
+  /** Authorized signature image from site settings. */
+  signatureUrl?: string | null;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -136,7 +138,7 @@ const P = {
   heart: "M12 21s-8-5.2-8-10.4A4.6 4.6 0 0112 8a4.6 4.6 0 018 2.6C20 15.8 12 21 12 21z",
 };
 
-export default function StandaloneInvoiceView({ invoice, onClose }: Props) {
+export default function StandaloneInvoiceView({ invoice, onClose, signatureUrl }: Props) {
   const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Invoice-${invoice.invoiceNumber}`);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -446,9 +448,14 @@ export default function StandaloneInvoiceView({ invoice, onClose }: Props) {
                   </div>
                   <div style={{ padding: "9px 12px", textAlign: "center" }}>
                     <p style={{ fontSize: 9.5, fontWeight: 800, color: NAVY, marginBottom: 3 }}>For Nexivio Care</p>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                      <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 16, color: "#0f172a", opacity: 0.8 }}>Nexivio</p>
-                      <div style={{ width: 42, height: 42, borderRadius: "50%", overflow: "hidden", border: `2px solid ${NAVY}` }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 44 }}>
+                      {signatureUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={assetUrl(signatureUrl)} alt="Authorized signature" style={{ maxHeight: 42, maxWidth: 104, objectFit: "contain" }} />
+                      ) : (
+                        <span style={{ width: 104 }} />
+                      )}
+                      <div style={{ width: 42, height: 42, borderRadius: "50%", overflow: "hidden", border: `2px solid ${NAVY}`, flexShrink: 0 }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src="/logo.jpeg" alt="Seal" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       </div>

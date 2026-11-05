@@ -11,9 +11,11 @@ interface ImageUploadProps {
   onChange: (url: string, publicId: string) => void;
   onClear?: () => void;
   label?: string;
+  /** Fit the whole image instead of cropping — use for logos and signatures. */
+  contain?: boolean;
 }
 
-export default function ImageUpload({ value, onChange, onClear, label = "ছবি আপলোড করুন" }: ImageUploadProps) {
+export default function ImageUpload({ value, onChange, onClear, label = "ছবি আপলোড করুন", contain }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -40,7 +42,11 @@ export default function ImageUpload({ value, onChange, onClear, label = "ছব�
       {preview ? (
         <div className="relative inline-block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={preview} alt="preview" className="h-32 w-full max-w-xs object-cover rounded-xl border border-slate-200" />
+          <img
+            src={preview}
+            alt="preview"
+            className={`h-32 w-full max-w-xs rounded-xl border border-slate-200 ${contain ? "object-contain bg-white p-2" : "object-cover"}`}
+          />
           {onClear && (
             <button
               type="button"

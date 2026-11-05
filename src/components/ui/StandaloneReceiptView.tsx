@@ -1,7 +1,7 @@
 "use client";
 
 import { usePdfExport, PdfToolbar } from "@/components/ui/PdfToolbar";
-import { numberToWords } from "@/lib/utils";
+import { numberToWords, assetUrl } from "@/lib/utils";
 
 export interface StandaloneReceiptData {
   id: string;
@@ -24,6 +24,8 @@ export interface StandaloneReceiptData {
 interface Props {
   receipt: StandaloneReceiptData;
   onClose: () => void;
+  /** Authorized signature image from site settings. */
+  signatureUrl?: string | null;
 }
 
 const NAVY = "#0d2d6b";
@@ -46,7 +48,7 @@ const PAYMENT_METHODS = [
   { key: "other", label: "Other", emoji: "···" },
 ];
 
-export default function StandaloneReceiptView({ receipt, onClose }: Props) {
+export default function StandaloneReceiptView({ receipt, onClose, signatureUrl }: Props) {
   const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Receipt-${receipt.receiptNumber}`);
 
   const amount = receipt.paidAmount ?? receipt.amount;
@@ -268,9 +270,15 @@ export default function StandaloneReceiptView({ receipt, onClose }: Props) {
 
             {/* SIGNATURE ROW */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, padding: "12px 28px 20px", borderTop: "1px solid #e2e8f0" }}>
-              {[{ title: "Received By" }, { title: "Company Seal", seal: true }, { title: "Client Signature" }].map(({ title, seal }) => (
+              {[{ title: "Received By", signed: true }, { title: "Company Seal", seal: true }, { title: "Client Signature" }].map(({ title, seal, signed }) => (
                 <div key={title} style={{ border: `1.5px solid ${GREEN}60`, borderRadius: 8, padding: "14px 16px", background: "#e8f5ee", textAlign: "center" }}>
-                  <p style={{ fontSize: 12, fontWeight: 800, color: NAVY, marginBottom: seal ? 8 : 36 }}>{title}</p>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: NAVY, marginBottom: seal ? 8 : signed && signatureUrl ? 2 : 36 }}>{title}</p>
+                  {signed && signatureUrl && (
+                    <div style={{ height: 34, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={assetUrl(signatureUrl)} alt="Authorized signature" style={{ maxHeight: 34, maxWidth: 130, objectFit: "contain" }} />
+                    </div>
+                  )}
                   {seal ? (
                     <>
                       <div style={{ display: "flex", justifyContent: "center" }}>

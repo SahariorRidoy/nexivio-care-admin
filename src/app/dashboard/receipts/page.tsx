@@ -81,6 +81,9 @@ export default function ReceiptsPage() {
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
   const [deletingInvoice, setDeletingInvoice] = useState(false);
 
+  // Authorized signature, stamped onto both documents (set in Settings → Branding)
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+
   // Filters
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -97,6 +100,9 @@ export default function ReceiptsPage() {
       .then((r) => setInvoices(r.data.map((inv) => ({ ...inv, items: inv.items as never }))))
       .catch(() => {})
       .finally(() => setInvoicesLoading(false));
+    api.get<{ data: { signatureUrl: string | null } }>("/settings")
+      .then((r) => setSignatureUrl(r.data.signatureUrl))
+      .catch(() => {});
   }, []);
 
   useEffect(() => setPage(1), [search, filterStatus, dateFrom, dateTo, tab]);
@@ -300,8 +306,8 @@ export default function ReceiptsPage() {
           onClose={() => { setInvoiceModal(false); setEditInvoice(null); }}
         />
       )}
-      {viewReceipt && <StandaloneReceiptView receipt={viewReceipt} onClose={() => setViewReceipt(null)} />}
-      {viewInvoice && <StandaloneInvoiceView invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}
+      {viewReceipt && <StandaloneReceiptView receipt={viewReceipt} signatureUrl={signatureUrl} onClose={() => setViewReceipt(null)} />}
+      {viewInvoice && <StandaloneInvoiceView invoice={viewInvoice} signatureUrl={signatureUrl} onClose={() => setViewInvoice(null)} />}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">

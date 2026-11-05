@@ -200,13 +200,13 @@ export default function InvoiceFormModal({ initial, onSave, onClose }: Props) {
                             value={item.service}
                             onChange={(e) => updateItem(i, "service", e.target.value)}
                             placeholder="Service description..."
-                            className="h-8 flex-[3] min-w-0 rounded-md border border-slate-200 px-2 text-xs focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
+                            className="h-8 flex-3 min-w-0 rounded-md border border-slate-200 px-2 text-xs focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
                           />
                           <input
                             value={item.package ?? ""}
                             onChange={(e) => updateItem(i, "package", e.target.value)}
                             placeholder="Sub-note (optional)"
-                            className="h-8 flex-[2] min-w-0 rounded-md border border-slate-200 px-2 text-[11px] text-slate-600 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
+                            className="h-8 flex-2 min-w-0 rounded-md border border-slate-200 px-2 text-[11px] text-slate-600 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400/20"
                           />
                         </div>
                       </td>
