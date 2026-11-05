@@ -51,7 +51,7 @@ function Pagination({ page, totalPages, total, onChange }: { page: number; total
         {pages.map((p, i) => p === "..." ? (
           <span key={`e-${i}`} className="px-2 text-slate-400 text-sm">…</span>
         ) : (
-          <button key={p} onClick={() => onChange(p as number)} className={`min-w-[34px] h-[34px] rounded-lg border text-sm font-medium transition-colors ${p === page ? "bg-primary-600 text-white border-primary-600" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>{p}</button>
+          <button key={p} onClick={() => onChange(p as number)} className={`min-w-8.5 h-8.5 rounded-lg border text-sm font-medium transition-colors ${p === page ? "bg-primary-600 text-white border-primary-600" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>{p}</button>
         ))}
         <button onClick={() => onChange(page + 1)} disabled={page === totalPages} className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors"><ChevronRight size={15} /></button>
         <button onClick={() => onChange(totalPages)} disabled={page === totalPages} className="p-1.5 rounded-lg border border-slate-200 disabled:opacity-30 hover:bg-slate-50 transition-colors"><ChevronsRight size={15} /></button>
