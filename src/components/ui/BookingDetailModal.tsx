@@ -1,5 +1,6 @@
 "use client";
 
+import QuickSmsButton from "@/components/sms/QuickSmsButton";
 import { useEffect, useState } from "react";
 import {
   X, MapPin, Phone, Copy, Receipt, Trash2, Save, Edit3, ChevronDown, ChevronUp,
@@ -187,6 +188,7 @@ export default function BookingDetailModal({ booking, services, onClose, onUpdat
                   <span className="text-sm text-slate-600">{booking.phone}</span>
                   <a href={`tel:${booking.phone}`} className="p-1 rounded bg-green-100 text-green-600 hover:bg-green-200 transition-colors"><Phone size={11} /></a>
                   <button onClick={() => { navigator.clipboard.writeText(booking.phone); toast.success("কপি হয়েছে!"); }} className="p-1 rounded bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"><Copy size={11} /></button>
+                  <QuickSmsButton phone={booking.phone} name={booking.name} />
                 </div>
                 {booking.address && <p className="text-xs text-slate-400 flex items-center gap-1"><MapPin size={10} />{booking.address}</p>}
               </div>

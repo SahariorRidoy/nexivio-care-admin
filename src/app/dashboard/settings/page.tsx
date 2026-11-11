@@ -32,8 +32,10 @@ interface Settings {
   bkashAppSecret: string | null;
   bkashUsername: string | null;
   bkashPassword: string | null;
+  smsProvider: string | null;
   smsApiKey: string | null;
   smsSenderId: string | null;
+  smsSignature: string | null;
 }
 
 const empty: Settings = {
@@ -45,7 +47,7 @@ const empty: Settings = {
   signatureUrl: null, signaturePublicId: null,
   bkashBaseUrl: "https://tokenized.sandbox.bka.sh/v1.2.0-beta",
   bkashAppKey: "", bkashAppSecret: "", bkashUsername: "", bkashPassword: "",
-  smsApiKey: "", smsSenderId: "",
+  smsProvider: "bdbulksms", smsApiKey: "", smsSenderId: "", smsSignature: "",
 };
 
 type TabKey = "contact" | "social" | "branding" | "integrations";
@@ -65,7 +67,7 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api.get<{ data: Settings }>("/settings")
+    api.get<{ data: Settings }>("/settings/admin")
       .then((r) => setForm({ ...empty, ...r.data }))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -281,14 +283,24 @@ export default function SettingsPage() {
                 </div>
               </Section>
 
-              <Section title="SMS গেটওয়ে (BDBulkSMS)">
-                <p className="text-xs text-slate-500">BDBulkSMS — বাংলাদেশের জনপ্রিয় ও সাশ্রয়ী Bulk SMS সেবা। API Key ও Sender ID পেতে <a href="https://bdbulksms.net" target="_blank" rel="noreferrer" className="underline text-primary-600">bdbulksms.net</a> থেকে অ্যাকাউন্ট খুলুন।</p>
+              <Section title="SMS গেটওয়ে (Masking SMS)">
+                <p className="text-xs text-slate-500">Masking SMS-এ প্রাপক আপনার অনুমোদিত Sender ID (যেমন NEXIVIO) দেখতে পাবেন। Sender ID প্রোভাইডার থেকে অনুমোদিত হতে হবে। সংরক্ষণের পর <a href="/dashboard/sms" className="underline text-primary-600">SMS পেজে</a> ব্যালেন্স চেক করে সংযোগ যাচাই করুন।</p>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Field label="API Token">
-                    <input type="password" value={form.smsApiKey ?? ""} onChange={(e) => set("smsApiKey", e.target.value)} className={inp} placeholder="Your BDBulkSMS API key" />
+                  <Field label="প্রোভাইডার">
+                    <select value={form.smsProvider ?? "bdbulksms"} onChange={(e) => set("smsProvider", e.target.value)} className={inp}>
+                      <option value="bdbulksms">BDBulkSMS (api.bdbulksms.net — token)</option>
+                      <option value="bulksmsbd">BulkSMSBD (bulksmsbd.net — api_key + senderid)</option>
+                      <option value="legacy">Legacy (পূর্বের ইন্টিগ্রেশন)</option>
+                    </select>
                   </Field>
-                  <Field label="Sender ID (SID)">
+                  <Field label="API Token / Key">
+                    <input type="password" value={form.smsApiKey ?? ""} onChange={(e) => set("smsApiKey", e.target.value)} className={inp} placeholder="Provider API token" />
+                  </Field>
+                  <Field label="Masking Sender ID">
                     <input value={form.smsSenderId ?? ""} onChange={(e) => set("smsSenderId", e.target.value)} className={inp} placeholder="e.g. NEXIVIO" />
+                  </Field>
+                  <Field label="সিগনেচার (ঐচ্ছিক — প্রতিটি SMS-এর শেষে যুক্ত হবে)">
+                    <input value={form.smsSignature ?? ""} onChange={(e) => set("smsSignature", e.target.value)} className={inp} placeholder="- Nexivio Care" />
                   </Field>
                 </div>
               </Section>
