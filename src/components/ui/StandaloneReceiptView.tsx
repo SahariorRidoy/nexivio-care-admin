@@ -1,7 +1,11 @@
 "use client";
 
+import { useRef, useEffect, useState } from "react";
 import { usePdfExport, PdfToolbar } from "@/components/ui/PdfToolbar";
 import { numberToWords, assetUrl } from "@/lib/utils";
+
+/** The width this receipt is designed at. The PDF is always captured at it. */
+const DOC_WIDTH = 960;
 
 export interface StandaloneReceiptData {
   id: string;
@@ -49,7 +53,27 @@ const PAYMENT_METHODS = [
 ];
 
 export default function StandaloneReceiptView({ receipt, onClose, signatureUrl }: Props) {
-  const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Receipt-${receipt.receiptNumber}`);
+  const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(
+    `Receipt-${receipt.receiptNumber}`,
+    DOC_WIDTH
+  );
+
+  // The document keeps its design width; the preview is scaled down to fit the
+  // viewport so small screens show the whole sheet instead of clipping it.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [docHeight, setDocHeight] = useState(0);
+
+  useEffect(() => {
+    const compute = () => {
+      if (!wrapRef.current) return;
+      setScale(Math.min(1, (wrapRef.current.clientWidth - 32) / DOC_WIDTH));
+      if (printRef.current) setDocHeight(printRef.current.offsetHeight);
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, [printRef]);
 
   const amount = receipt.paidAmount ?? receipt.amount;
   const amountWords = numberToWords(amount);
@@ -97,8 +121,9 @@ export default function StandaloneReceiptView({ receipt, onClose, signatureUrl }
           handleDownload={handleDownload}
           handlePrint={handlePrint}
         />
-        <div className="overflow-y-auto flex-1 bg-slate-100 p-4">
-          <div ref={printRef} style={{ background: "#fff", fontFamily: "'Segoe UI', Arial, sans-serif", color: "#1e293b", width: "100%", maxWidth: "960px", margin: "0 auto" }}>
+        <div ref={wrapRef} className="flex-1 bg-slate-100 p-4 overflow-y-auto overflow-x-hidden flex flex-col items-center">
+          <div style={{ width: DOC_WIDTH, transform: `scale(${scale})`, transformOrigin: "top center", marginBottom: docHeight ? docHeight * scale - docHeight : 0 }}>
+          <div ref={printRef} style={{ background: "#fff", fontFamily: "NexivioDoc, 'Segoe UI', Arial, sans-serif", color: "#1e293b", width: DOC_WIDTH }}>
 
             {/* HEADER */}
             <div style={{ position: "relative", overflow: "hidden", background: "#fff" }}>
@@ -305,6 +330,7 @@ export default function StandaloneReceiptView({ receipt, onClose, signatureUrl }
               <p style={{ color: "rgba(255,255,255,0.9)", fontSize: 12, fontStyle: "italic" }}>♡ &nbsp;Thank you for choosing Nexivio Care.</p>
               <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>🌐 www.nexiviocare.com</p>
             </div>
+          </div>
           </div>
         </div>
       </div>

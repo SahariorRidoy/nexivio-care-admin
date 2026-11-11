@@ -139,19 +139,21 @@ const P = {
 };
 
 export default function StandaloneInvoiceView({ invoice, onClose, signatureUrl }: Props) {
-  const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Invoice-${invoice.invoiceNumber}`);
+  const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Invoice-${invoice.invoiceNumber}`, 794);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [docHeight, setDocHeight] = useState(0);
 
   useEffect(() => {
     const compute = () => {
       if (!wrapRef.current) return;
-      setScale((wrapRef.current.clientWidth - 32) / 794);
+      setScale(Math.min(1, (wrapRef.current.clientWidth - 32) / 794));
+      if (printRef.current) setDocHeight(printRef.current.offsetHeight);
     };
     compute();
     window.addEventListener("resize", compute);
     return () => window.removeEventListener("resize", compute);
-  }, []);
+  }, [printRef]);
 
   const fmtDate = (s: string) => {
     const d = new Date(s);
@@ -223,9 +225,9 @@ export default function StandaloneInvoiceView({ invoice, onClose, signatureUrl }
           handleDownload={handleDownload}
           handlePrint={handlePrint}
         />
-        <div ref={wrapRef} className="flex-1 bg-slate-100 overflow-y-auto flex flex-col items-center py-4">
-          <div style={{ transform: `scale(${scale})`, transformOrigin: "top center", width: 794 }}>
-            <div ref={printRef} style={{ background: "#fff", fontFamily: "'Segoe UI', Arial, sans-serif", color: "#1f2937", width: 794, position: "relative", overflow: "hidden" }}>
+        <div ref={wrapRef} className="flex-1 bg-slate-100 overflow-y-auto overflow-x-hidden flex flex-col items-center py-4">
+          <div style={{ transform: `scale(${scale})`, transformOrigin: "top center", width: 794, marginBottom: docHeight ? docHeight * scale - docHeight : 0 }}>
+            <div ref={printRef} style={{ background: "#fff", fontFamily: "NexivioDoc, 'Segoe UI', Arial, sans-serif", color: "#1f2937", width: 794, position: "relative", overflow: "hidden" }}>
 
               {/* ── Corner swoosh ── */}
               <svg viewBox="0 0 300 160" style={{ position: "absolute", top: 0, right: 0, width: 300, height: 160 }}>
@@ -271,7 +273,7 @@ export default function StandaloneInvoiceView({ invoice, onClose, signatureUrl }
 
                 {/* INVOICE */}
                 <div style={{ textAlign: "right", minWidth: 188, position: "relative", zIndex: 1 }}>
-                  <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 700, fontSize: 15, color: NAVY, marginBottom: 2 }}>Care You Can Trust</p>
+                  <p style={{ fontFamily: "NexivioDocSerif, Georgia, serif", fontStyle: "italic", fontWeight: 700, fontSize: 15, color: NAVY, marginBottom: 2 }}>Care You Can Trust</p>
                   <svg viewBox="0 0 150 10" style={{ width: 150, height: 10, marginLeft: "auto", display: "block" }}>
                     <path d="M2,7 Q60,0 140,4" stroke={GREEN} strokeWidth="2" fill="none" strokeLinecap="round" />
                     <path d="M140,4 q7,-5 9,1 q-6,4 -9,-1z" fill={GREEN} />
@@ -479,7 +481,7 @@ export default function StandaloneInvoiceView({ invoice, onClose, signatureUrl }
                     <span style={{ fontSize: 9.5, color: "#fff", fontStyle: "italic" }}>Professional Care &nbsp;|&nbsp; Trusted Service &nbsp;|&nbsp; Healthier Tomorrow</span>
                   </div>
                   <div style={{ textAlign: "right" }}>
-                    <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 19, fontWeight: 700, color: "#fff", lineHeight: 1 }}>Thank You</p>
+                    <p style={{ fontFamily: "NexivioDocSerif, Georgia, serif", fontStyle: "italic", fontSize: 19, fontWeight: 700, color: "#fff", lineHeight: 1 }}>Thank You</p>
                     <p style={{ fontSize: 8.5, color: "rgba(255,255,255,0.85)" }}>for Choosing Nexivio Care</p>
                   </div>
                 </div>

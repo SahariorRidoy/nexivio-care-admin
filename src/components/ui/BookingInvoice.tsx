@@ -35,7 +35,7 @@ export default function BookingInvoice({ booking, serviceName, onClose }: Props)
     ? booking.receiptNumber.replace("MR", "INV").replace("RCP", "INV")
     : `NC-INV-${new Date(booking.createdAt).getFullYear()}-${String(booking.id).slice(0, 4).toUpperCase()}`;
 
-  const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Invoice-${invNo}`);
+  const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Invoice-${invNo}`, 794);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -60,7 +60,7 @@ export default function BookingInvoice({ booking, serviceName, onClose }: Props)
     const compute = () => {
       if (!wrapRef.current) return;
       const { clientWidth } = wrapRef.current;
-      setScale((clientWidth - 32) / 794);
+      setScale(Math.min(1, (clientWidth - 32) / 794));
     };
     compute();
     window.addEventListener("resize", compute);
@@ -124,7 +124,7 @@ export default function BookingInvoice({ booking, serviceName, onClose }: Props)
         />
 
         {/* Scaling viewport — scrollable */}
-        <div ref={wrapRef} className="flex-1 bg-slate-100 overflow-y-auto flex flex-col items-center py-4">
+        <div ref={wrapRef} className="flex-1 bg-slate-100 overflow-y-auto overflow-x-hidden flex flex-col items-center py-4">
           <div style={{ transform: `scale(${scale})`, transformOrigin: "top center", width: 794, marginBottom: `${(1123 * scale) - 1123}px` }}>
 
             {/* A4: 794 x 1123 */}
@@ -132,7 +132,7 @@ export default function BookingInvoice({ booking, serviceName, onClose }: Props)
               ref={printRef}
               style={{
                 background: "#fff",
-                fontFamily: "'Segoe UI', Arial, sans-serif",
+                fontFamily: "NexivioDoc, 'Segoe UI', Arial, sans-serif",
                 color: "#1e293b",
                 width: 794,
                 display: "flex",

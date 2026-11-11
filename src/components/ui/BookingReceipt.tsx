@@ -1,7 +1,11 @@
 "use client";
 
+import { useRef, useEffect, useState } from "react";
 import { usePdfExport, PdfToolbar } from "@/components/ui/PdfToolbar";
 import { numberToWords } from "@/lib/utils";
+
+/** The width this receipt is designed at. The PDF is always captured at it. */
+const DOC_WIDTH = 960;
 
 export interface ReceiptBooking {
   id: string;
@@ -56,7 +60,24 @@ const PAYMENT_METHODS = [
 
 export default function BookingReceipt({ booking, serviceName, onClose }: Props) {
   const rcptNo = booking.receiptNumber ?? "—";
-  const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Receipt-${rcptNo}`);
+  const { printRef, getPdfBlob, handleDownload, handlePrint } = usePdfExport(`Receipt-${rcptNo}`, DOC_WIDTH);
+
+  // The document keeps its design width; the preview is scaled down to fit the
+  // viewport so small screens show the whole sheet instead of clipping it.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [docHeight, setDocHeight] = useState(0);
+
+  useEffect(() => {
+    const compute = () => {
+      if (!wrapRef.current) return;
+      setScale(Math.min(1, (wrapRef.current.clientWidth - 32) / DOC_WIDTH));
+      if (printRef.current) setDocHeight(printRef.current.offsetHeight);
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, [printRef]);
 
   const amount = booking.amount ?? 0;
   const amountWords = numberToWords(amount);
@@ -115,17 +136,16 @@ export default function BookingReceipt({ booking, serviceName, onClose }: Props)
           handlePrint={handlePrint}
         />
 
-        <div className="overflow-y-auto flex-1 bg-slate-100 p-4">
+        <div ref={wrapRef} className="flex-1 bg-slate-100 p-4 overflow-y-auto overflow-x-hidden flex flex-col items-center">
+          <div style={{ width: DOC_WIDTH, transform: `scale(${scale})`, transformOrigin: "top center", marginBottom: docHeight ? docHeight * scale - docHeight : 0 }}>
           {/* A4 landscape receipt */}
           <div
             ref={printRef}
             style={{
               background: "#fff",
-              fontFamily: "'Segoe UI', Arial, sans-serif",
+              fontFamily: "NexivioDoc, 'Segoe UI', Arial, sans-serif",
               color: "#1e293b",
-              width: "100%",
-              maxWidth: "960px",
-              margin: "0 auto",
+              width: DOC_WIDTH,
             }}
           >
             {/* ── HEADER ── */}
@@ -408,6 +428,7 @@ export default function BookingReceipt({ booking, serviceName, onClose }: Props)
               </p>
             </div>
 
+          </div>
           </div>
         </div>
       </div>
