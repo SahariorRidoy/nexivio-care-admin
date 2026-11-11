@@ -36,6 +36,9 @@ interface Settings {
   smsApiKey: string | null;
   smsSenderId: string | null;
   smsSignature: string | null;
+  metaPixelId: string | null;
+  metaAccessToken: string | null;
+  metaTestEventCode: string | null;
 }
 
 const empty: Settings = {
@@ -48,6 +51,7 @@ const empty: Settings = {
   bkashBaseUrl: "https://tokenized.sandbox.bka.sh/v1.2.0-beta",
   bkashAppKey: "", bkashAppSecret: "", bkashUsername: "", bkashPassword: "",
   smsProvider: "bdbulksms", smsApiKey: "", smsSenderId: "", smsSignature: "",
+  metaPixelId: "", metaAccessToken: "", metaTestEventCode: "",
 };
 
 type TabKey = "contact" | "social" | "branding" | "integrations";
@@ -56,7 +60,7 @@ const TABS: { key: TabKey; label: string; hint: string; icon: typeof Phone }[] =
   { key: "contact", label: "যোগাযোগ তথ্য", hint: "ফোন, ইমেইল ও ঠিকানা", icon: Phone },
   { key: "social", label: "সোশ্যাল মিডিয়া", hint: "প্রোফাইল লিংকসমূহ", icon: Share2 },
   { key: "branding", label: "ব্র্যান্ডিং ও অ্যাসেট", hint: "লোগো, QR ও স্বাক্ষর", icon: Palette },
-  { key: "integrations", label: "ইন্টিগ্রেশন", hint: "bKash ও SMS গেটওয়ে", icon: Plug },
+  { key: "integrations", label: "ইন্টিগ্রেশন", hint: "bKash, SMS ও Meta Pixel", icon: Plug },
 ];
 
 export default function SettingsPage() {
@@ -301,6 +305,24 @@ export default function SettingsPage() {
                   </Field>
                   <Field label="সিগনেচার (ঐচ্ছিক — প্রতিটি SMS-এর শেষে যুক্ত হবে)">
                     <input value={form.smsSignature ?? ""} onChange={(e) => set("smsSignature", e.target.value)} className={inp} placeholder="- Nexivio Care" />
+                  </Field>
+                </div>
+              </Section>
+
+              <Section title="Meta (Facebook) Pixel ও Conversions API">
+                <p className="text-xs text-slate-500">
+                  শুধু Pixel ID দিলে ব্রাউজার ট্র্যাকিং চালু হবে (PageView, ViewContent, Lead, InitiateCheckout, Purchase)। সার্ভার-সাইড ট্র্যাকিং (Conversions API) চালু করতে Access Token দিন —
+                  Events Manager → আপনার Pixel → Settings → Conversions API → Generate access token। Purchase ইভেন্ট শুধুমাত্র সার্ভিস বুকিং পেমেন্ট সম্পন্ন হলে (bKash সফল বা অ্যাডমিন &quot;paid&quot; করলে) পাঠানো হয়।
+                </p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field label="Pixel ID">
+                    <input value={form.metaPixelId ?? ""} onChange={(e) => set("metaPixelId", e.target.value.replace(/\D/g, ""))} className={inp} placeholder="e.g. 123456789012345" inputMode="numeric" />
+                  </Field>
+                  <Field label="Conversions API Access Token (ঐচ্ছিক)">
+                    <input type="password" value={form.metaAccessToken ?? ""} onChange={(e) => set("metaAccessToken", e.target.value)} className={inp} placeholder="EAAB..." />
+                  </Field>
+                  <Field label="Test Event Code (শুধু টেস্টের সময়)">
+                    <input value={form.metaTestEventCode ?? ""} onChange={(e) => set("metaTestEventCode", e.target.value)} className={inp} placeholder="e.g. TEST12345 — লাইভে খালি রাখুন" />
                   </Field>
                 </div>
               </Section>
